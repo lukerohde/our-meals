@@ -1,0 +1,28 @@
+version: "3"
+services:
+  app:
+    volumes:
+      - ./app:/home/pyuser/app:delegated
+      - ./.packages:/home/pyuser/.local
+      - app_user:/home/pyuser # for bash history etc
+    command:
+      - ./docker-start.override
+    ports:
+      - $APP_PORT:3000
+    networks:
+      development:
+  pg:
+    ports:
+      - $POSTGRES_PORT:5432
+    networks:
+      - development
+    volumes:
+      - ./.pg_data:/pg_data
+      - db_root:/root # for bash history etc
+#      - ./backup.sql.gz:/docker-entrypoint-initdb.d/seed.sql.gz
+networks:
+  development:
+volumes:
+  app_user:
+  db_root:
+  

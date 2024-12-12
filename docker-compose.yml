@@ -1,0 +1,41 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./app.dockerfile
+    restart: unless-stopped
+    environment:
+      - APP_PORT
+      - POSTGRES_DB
+      - POSTGRES_HOST
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_PORT
+      - REDIS_HOST
+      - REDIS_PASSWORD
+      - REDIS_PORT_NUMBER
+      - DJANGO_SECRET_KEY
+      - DJANGO_SUPERUSER_USERNAME
+      - DJANGO_SUPERUSER_PASSWORD
+      - DJANGO_SUPERUSER_EMAIL
+      - DJANGO_ALLOWED_HOSTS
+    links:
+      - pg
+    tty: true
+    stdin_open: true
+    command: "python manage.py runserver 0.0.0.0:8000"
+  pg:
+    image: postgres:15.2
+    restart: unless-stopped
+    environment:
+      - PGDATA=/pg_data
+      - POSTGRES_DB
+      - POSTGRES_HOST
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    volumes:
+      - pg_data:/pg_data
+volumes:
+  pg_data:
+  notebook_data:

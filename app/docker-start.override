@@ -1,0 +1,9 @@
+#!/bin/sh
+echo \# Hanging the container so you can shell in and run django commands
+
+# THIS KEEPS THE CONTAINER RUNNING
+# AND GRACEFULLY KILLS IT TOO
+trap "echo $0 gracefully shutting down... && pkill python" TERM INT
+tail -f /dev/null &
+wait 
+EXIT_STATUS=$?

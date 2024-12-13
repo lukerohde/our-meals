@@ -10,10 +10,11 @@ __pycache__
 
 # deployment stuff
 .digital_ocean_env
-backup
+backup/
 .certbot
 .nginx
 .tmp
 app/staticfiles
 .DS_Store
 node_modules
+app/ai_helpers.log

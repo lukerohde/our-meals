@@ -9,7 +9,7 @@ echo Dumping postgres database
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "mkdir /home/$DIGITAL_OCEAN_APP_USER/data"
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "docker exec -t src-pg-1 pg_dump -d $POSTGRES_DB -U $POSTGRES_USER -c > /home/$DIGITAL_OCEAN_APP_USER/data/$POSTGRES_DB-db.sql"
 
-echo Backing up database dump and gitea data
+echo Backing up database dump and app data
 ssh $DIGITAL_OCEAN_APP_USER@$DROPLET_IP "sudo tar -zcvf /home/$DIGITAL_OCEAN_APP_USER/backup.tar.gz /home/$DIGITAL_OCEAN_APP_USER/data"
 
 # Download the backup archive to the local machine

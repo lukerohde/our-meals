@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Grocery List</h1>
+  <ul class="list-group">
+    {% for item, amount in ingredients.items %}
+      <li class="list-group-item">{{ amount }} {{ item }}</li>
+    {% endfor %}
+  </ul>
+{% endblock %} 

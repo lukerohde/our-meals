@@ -49,3 +49,14 @@ python manage.py migrate
 python manage.py createsuperuser --noinput
 python manage.py runserver 0.0.0.0:3000
 ``` 
+
+# Deployment Instructions
+
+1. **Ensure environment variables are set appropriately for production.**
+2. **Build Docker containers:**    ```bash
+    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d    ```
+3. **Apply migrations:**    ```bash
+    docker-compose exec web python manage.py migrate    ```
+4. **Collect static files:**    ```bash
+    docker-compose exec web python manage.py collectstatic --noinput    ```
+5. **Access the live application at your server's domain or IP.**

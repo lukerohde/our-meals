@@ -21,6 +21,7 @@ services:
       - DJANGO_SUPERUSER_EMAIL
       - DJANGO_ALLOWED_HOSTS
       - DJANGO_DEBUG
+      - OPENAI_API_KEY
     links:
       - pg
     tty: true

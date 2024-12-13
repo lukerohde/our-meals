@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>{{ meal.title }}</h1>
+  <p>{{ meal.description }}</p>
+  <a href="{{ meal.url }}" target="_blank">{{ meal.url }}</a>
+
+  <h2>Recipes</h2>
+  
+  {% if recipes %}
+    <div class="recipes">
+      {% for recipe in recipes %}
+        <div class="card mb-4">
+          {% if recipe.photo %}
+            <img src="{{ recipe.photo.url }}" class="card-img-top" alt="{{ recipe.title }}">
+          {% endif %}
+          <div class="card-body">
+            <h3 class="card-title">{{ recipe.title }}</h3>
+            <p class="card-text">{{ recipe.description }}</p>
+            
+            <h4>Ingredients</h4>
+            {% if recipe.ingredients.all %}
+              <ul class="list-group list-group-flush">
+                {% for ingredient in recipe.ingredients.all %}
+                  <li class="list-group-item">
+                    {% if ingredient.amount %}
+                      {{ ingredient.amount }} {{ ingredient.unit }} {{ ingredient.name }}
+                    {% else %}
+                      {{ ingredient.name }} (to taste)
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p>No ingredients listed.</p>
+            {% endif %}
+            
+            <h4>Method</h4>
+            {% if recipe.method_steps.all %}
+              <ol>
+                {% for step in recipe.method_steps.all %}
+                  <li>{{ step.description }}</li>
+                {% endfor %}
+              </ol>
+            {% else %}
+              <p>No method steps provided.</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p>No recipes found for this meal.</p>
+  {% endif %}
+  
+  <a href="{% url 'collection_detail' meal.collection.pk %}" class="btn btn-secondary">Back to Collection</a>
+{% endblock %} 

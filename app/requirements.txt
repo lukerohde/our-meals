@@ -16,6 +16,8 @@ gunicorn
 django-allauth
 beautifulsoup4
 openai
+jwt
+pillow
 
 ## django frozen at 5.1.4 - 2024-12-13
 ## pip freeze > requirements.txt

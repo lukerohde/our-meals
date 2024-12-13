@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OurMenu</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f0e3;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        h1, h2, h3 {
+            color: #b5651d;
+        }
+        .btn-primary {
+            background-color: #ffbf00;
+            border-color: #ffbf00;
+        }
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="{% url 'collection_list' %}">OurMenu</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ml-auto">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'meal_plan' %}">Meal Plan</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'account_logout' %}">Logout</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'account_login' %}">Login</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        {% block content %}
+        {% endblock %}
+    </div>
+</body>
+</html> 

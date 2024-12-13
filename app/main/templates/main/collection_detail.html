@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>{{ collection.title }}</h1>
+  <p>{{ collection.description }}</p>
+  <h2>Meals</h2>
+  
+  <!-- Add a form to submit a URL -->
+  <form method="post" action="{% url 'scrape' %}">
+    {% csrf_token %}
+    <!-- Hidden input to pass collection ID -->
+    <input type="hidden" name="collection_id" value="{{ collection.id }}">
+    
+    <div class="form-group">
+      <label for="recipe-url">Recipe URL:</label>
+      <input type="url" class="form-control" id="recipe-url" name="recipe_url" placeholder="Enter recipe URL" required>
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Submit</button>
+  </form>
+
+  <ul class="list-group mt-3">
+    {% for meal in collection.meals.all %}
+      <li class="list-group-item">
+        <h5>
+          <a href="{% url 'meal_detail' meal.pk %}">
+            {{ meal.title }}
+          </a>
+        </h5>
+        <p>{{ meal.description }}</p>
+      </li>
+    {% empty %}
+      <li class="list-group-item">No meals found.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}

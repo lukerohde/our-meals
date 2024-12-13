@@ -20,11 +20,14 @@ services:
       - DJANGO_SUPERUSER_PASSWORD
       - DJANGO_SUPERUSER_EMAIL
       - DJANGO_ALLOWED_HOSTS
+      - DJANGO_DEBUG
     links:
       - pg
     tty: true
     stdin_open: true
     command: "python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - media_volume:/home/pyuser/app/media
   pg:
     image: postgres:15.2
     restart: unless-stopped
@@ -39,3 +42,4 @@ services:
 volumes:
   pg_data:
   notebook_data:
+  media_volume:

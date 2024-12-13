@@ -3,6 +3,7 @@ services:
   app:
     volumes:
       - ./app:/home/pyuser/app:delegated
+      - ./.media_volume:/home/pyuser/app/media
       - ./.packages:/home/pyuser/.local
       - app_user:/home/pyuser # for bash history etc
     command:

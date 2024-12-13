@@ -51,12 +51,29 @@ python manage.py runserver 0.0.0.0:3000
 ``` 
 
 # Deployment Instructions
+## Deploying to Digital Ocean
 
-1. **Ensure environment variables are set appropriately for production.**
-2. **Build Docker containers:**    ```bash
-    docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d    ```
-3. **Apply migrations:**    ```bash
-    docker-compose exec web python manage.py migrate    ```
-4. **Collect static files:**    ```bash
-    docker-compose exec web python manage.py collectstatic --noinput    ```
-5. **Access the live application at your server's domain or IP.**
+To deploy to digital ocean you'll need doctl installed as a prerequisite.
+
+On mac, `brew install doctl`
+
+Then you'll need to config it with your digital ocean token. 
+
+`doctl auth init`
+
+In the deploy directory there are a number of scripts to help you get into production.  You run them from the parent directory.
+
+* `deploy/go` will do everything
+* `deploy/01-build-server` will make a digital ocean server and set `.digital_ocean_env` so your other scripts will work
+* `deploy/02-config-server` this does everything to pave the road for deployment such as installing software and creating a non root user
+* `deploy/03-deploy-repo` this will clone the repo in and copy up the env files mentioned below, then fire up docker compose 
+* `deploy/userlogin` a shortcut for logging into the server
+* `deploy/rootlogin` I should probably kill this
+* `deploy/backup` take a copy of the production database
+* `deploy/restore` restores the latest backup
+* `deploy/cleanup` destroys the digital ocean server
+
+If you are using the digital ocean deploy scripts in /deploy, there are two files you'll need;
+
+* `.env-prod` for production configuration (same as .env unless you have different prod config)
+* `.docker-compose-override.yml.prod` which open the app port

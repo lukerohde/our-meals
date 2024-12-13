@@ -1,0 +1,46 @@
+#!/bin/bash
+
+cd src;
+. .env
+
+# we want to repopulate these, http first for certbot
+rm .nginx/http*.conf
+mv .tmp/http-*.conf .nginx/
+docker-compose build
+docker-compose up nginx -d
+
+# GENERATE CERTS
+echo "Praying to the letsencrypt gods for my certs"
+for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
+    export DOMAIN=$DIGITAL_OCEAN_DOMAIN
+    if [ "$A_NAME" != "@" ]; then 
+        export DOMAIN="$A_NAME.$DOMAIN"
+    fi
+
+    if ! sudo test -e ".certbot/certs/live/$DOMAIN"; then
+        echo "Running cert bot for $DOMAIN"
+        docker-compose up certbot
+
+        if ! sudo test -e ".certbot/certs/live/$DOMAIN"; then
+            echo "Couldn't generate cert for $DOMAIN.  Removing .tmp https nginx file"
+            rm ".tmp/https-$DOMAIN.conf" 
+        fi
+    fi
+done
+
+# SSL CONFIG
+echo "Praying to the SSL gods for security"
+
+if ! sudo test -e .certbot/certs/options-ssl-nginx.conf; then 
+    sudo curl -L --create-dirs -o .certbot/certs/options-ssl-nginx.conf https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf
+fi 
+
+if ! sudo test -e .certbot/certs/ssl-dhparams.pem; then 
+    sudo openssl dhparam -out .certbot/certs/ssl-dhparams.pem 2048
+fi
+
+# I'm having dramas here - the script is exiting prematurely
+
+echo "Reloading nginx with application https conf files"
+mv .tmp/https-*.conf .nginx/
+docker-compose exec nginx nginx -s reload 

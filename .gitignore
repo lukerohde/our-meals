@@ -1,6 +1,19 @@
 docker-compose.override.yml
+docker-compose.override.yml.prod
 .env
+.env-prod
 __pycache__
 .packages
 .notebook
 .pg_data
+.media_volume
+
+# deployment stuff
+.digital_ocean_env
+backup
+.certbot
+.nginx
+.tmp
+app/staticfiles
+.DS_Store
+node_modules

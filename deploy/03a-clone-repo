@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Create a new user
+if [ -d ~/src ]; then 
+    cd src
+    git pull origin
+else 
+    mkdir src 
+    git clone $1 src
+fi
+
+# TODO Check out branch, can we provide the deployment branch as a param?

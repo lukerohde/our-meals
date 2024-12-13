@@ -42,5 +42,4 @@ services:
       - pg_data:/pg_data
 volumes:
   pg_data:
-  notebook_data:
   media_volume:

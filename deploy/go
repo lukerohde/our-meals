@@ -1,0 +1,15 @@
+#!/bin/bash 
+
+# brew install doctl
+## log into digital ocean and get an api key
+# doctl auth init
+
+source deploy/01-build-server 
+
+echo Sleeping for 10 seconds to see if that fixes the intermittent unavailablity after build
+
+sleep 10
+
+source deploy/02-config-server
+
+source deploy/03-deploy-repo

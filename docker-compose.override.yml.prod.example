@@ -1,0 +1,35 @@
+version: "3"
+services:
+  app:
+    ports:
+      - $APP_PORT:3000
+    networks:
+      development:
+  nginx:
+    image: nginx:1.15-alpine
+    restart: unless-stopped
+    links:
+      - bots
+    volumes:
+      - ./.nginx:/etc/nginx/conf.d
+      - ./.certbot/certs:/etc/letsencrypt
+      - ./.certbot/challenge:/var/www/certbot
+      - ./app/staticfiles:/usr/share/nginx/html/static_root
+      #- ./app/.collectstatic/media_root:/usr/share/nginx/html/media_root
+    ports:
+      - "80:80"
+      - "443:443"
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+  certbot:
+    image: certbot/certbot
+    environment:
+      - DOMAIN
+    command: certonly -v --webroot --webroot-path /var/www/certbot --email $DJANGO_SUPERUSER_EMAIL --agree-tos --no-eff-email --domains $DOMAIN
+    links:
+      - nginx
+    volumes:
+      - ./.certbot/certs:/etc/letsencrypt
+      - ./.certbot/challenge:/var/www/certbot
+      - ./.certbot/logs:/var/logs/letsencrypt
+
+  

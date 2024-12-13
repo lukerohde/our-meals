@@ -1,0 +1,165 @@
+#!/bin/bash 
+
+# brew install doctl
+## log into digital ocean and get an api key
+# doctl auth init
+
+. .env-prod
+
+import_key(){
+  echo "Importing key $DIGITAL_OCEAN_KEYNAME"
+  doctl compute ssh-key import $DIGITAL_OCEAN_KEYNAME --public-key-file "$DIGITAL_OCEAN_PUBKEY"
+  export KEY_ID=$(doctl compute ssh-key list --format Name,ID | grep $DIGITAL_OCEAN_KEYNAME | awk '{print $2}')
+}
+
+get_status(){
+  STATUS=$(doctl compute droplet list --format Name,Status | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+get_firewall_status(){
+  FIREWALL_STATUS=$(doctl compute firewall list --format Name,Status | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+create_droplet(){
+  doctl compute droplet create $DIGITAL_OCEAN_SERVER_NAME --image ubuntu-24-04-x64 --size s-1vcpu-1gb --region syd1 --ssh-keys $KEY_ID
+  while true; do
+    get_status
+    if [[ $STATUS == "active" ]]; then
+        echo "Droplet is now active"
+        break
+    fi
+    echo "Status is '$STATUS'. Waiting for droplet to become active..."
+    sleep 10
+  done
+}
+
+get_key_id(){
+  export KEY_ID=$(doctl compute ssh-key list --format Name,ID | grep $DIGITAL_OCEAN_KEYNAME | awk '{print $2}')
+}
+
+create_firewall(){
+  export FIREWALL_ID=$(doctl compute firewall list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+  export CURRENT_RULES=$(doctl compute firewall get $FIREWALL_ID --format InboundRules --no-header)
+
+  if [[ -n "$FIREWALL_ID" ]]; then
+    export CURRENT_RULES=$(doctl compute firewall get $FIREWALL_ID --format InboundRules --no-header)
+    if [[ "$DIGITAL_OCEAN_FIREWALL_RULES" == "$CURRENT_RULES" ]]; then
+      echo "Firewall rules have not changed. Skipping update."
+      return
+    fi
+
+    echo "Dropping existing firewall $FIREWALL_ID"
+    doctl compute firewall delete $FIREWALL_ID --force
+  fi 
+
+  echo "Applying new firewall with rules $DIGITAL_OCEAN_FIREWALL_RULES"  
+  doctl compute firewall create --name "$DIGITAL_OCEAN_SERVER_NAME" --inbound-rules "$DIGITAL_OCEAN_FIREWALL_RULES" --outbound-rules "protocol:tcp,ports:0,address:0.0.0.0/0,address:::/0 protocol:udp,ports:0,address:0.0.0.0/0,address:::/0" --droplet-ids $DROPLET_ID
+  doctl compute firewall list --format ID,Status | grep "$DIGITAL_OCEAN_SERVER_NAME"
+  
+  while true; do
+    get_firewall_status
+    if [[ $FIREWALL_STATUS == "succeeded" ]]; then
+        echo "Firewall is now active"
+        break
+    fi
+    echo "Status is '$FIREWALL_STATUS'. Waiting for firewall to become active..."
+    sleep 1
+  done
+  export FIREWALL_ID=$(doctl compute firewall list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+create_reserved_ip() {
+  echo "Creating a reserved IP"
+  doctl compute reserved-ip create --droplet-id $DROPLET_ID
+}
+
+get_reserved_ip(){
+  # TODO RESERVED_IP = ASSIGNED IP, but if no ASSIGNED IP then check for an unused RESERVED IP (that was previously allocated)
+  # Can we use DNS root records to inform us of the previously reserved ip, and use that?
+  # Update clean up script to give the option to relinquish a reserved IP, and associated DNS records
+  export RESERVED_IP=$(doctl compute reserved-ip list --format IP --no-header | awk '{print $1}')
+  export ASSIGNED_IP=$(doctl compute reserved-ip list --format DropletName,IP --no-header | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+
+assign_ip(){
+  echo "Assigning Reserved IP $RESERVED_IP"
+  doctl compute reserved-ip-action assign $RESERVED_IP $DROPLET_ID
+}
+
+update_domains() {
+  DOMAINS=${DOMAINS:-""}
+
+  # Check that the required environment variables are set
+  if [ -z "$DIGITAL_OCEAN_DOMAIN" ] || [ -z "$RESERVED_IP" ]; then
+    echo "ERROR: Both DOMAINS and RESERVED_IP environment variables must be set."
+    exit 1
+  fi
+
+    # Check if the DNS Zone exists for the domain
+  if ! doctl compute domain list $DIGITAL_OCEAN_DOMAIN --format "Domain" | grep -q "^$DIGITAL_OCEAN_DOMAIN$" ; then 
+    # if not, create it 
+    echo "Creating domain for $DIGITAL_OCEAN_DOMAIN"
+    doctl compute domain create $DIGITAL_OCEAN_DOMAIN --ip-address $RESERVED_IP
+  fi
+
+  for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
+
+    export RECORD_ID=$(doctl compute domain records list $DIGITAL_OCEAN_DOMAIN --format "ID,Type,Name,Data" | grep "\sA\s*$A_NAME\s" | awk '{print $1}') ; 
+
+    echo A_RECORD: $RECORD_ID
+
+    # Check if the www record already exists for the domain
+    if [[ -z "$RECORD_ID" ]]; then
+      echo "Create A record $A_NAME for $DIGITAL_OCEAN_DOMAIN with $RESERVED_IP"
+      doctl compute domain records create $DIGITAL_OCEAN_DOMAIN --record-type A --record-name $A_NAME --record-data $RESERVED_IP
+    else
+      echo "Update A record $A_NAME for $DIGITAL_OCEAN_DOMAIN with $RESERVED_IP"
+      doctl compute domain records update $DIGITAL_OCEAN_DOMAIN --record-id $RECORD_ID --record-data $RESERVED_IP
+    fi
+  done
+}
+
+
+get_key_id
+if [[ -z "$KEY_ID" ]]; then
+  import_key
+else
+  echo "Key $DIGITAL_OCEAN_KEYNAME already exists with ID: $KEY_ID"
+fi
+
+get_status
+if [[ -z "$STATUS" ]]; then
+  echo "Creating droplet $DIGITAL_OCEAN_SERVER_NAME"
+  create_droplet
+else
+  echo "Droplet $DIGITAL_OCEAN_SERVER_NAME already exists. Status is '$STATUS'"  
+fi
+
+export DROPLET_ID=$(doctl compute droplet list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+export DROPLET_IP=$(doctl compute droplet list --format Name,PublicIPv4 | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+
+get_reserved_ip
+if [[ -z "$RESERVED_IP" ]]; then 
+  create_reserved_ip
+  get_reserved_ip
+elif [[ -z "$ASSIGNED_IP" ]]; then 
+  assign_ip
+  get_reserved_ip
+else 
+  echo Droplet already assigned $ASSIGNED_IP - it should match $RESERVED_IP
+fi 
+
+update_domains
+
+create_firewall
+
+echo Saving digital ocean environment vars
+echo DROPLET_IP=$DROPLET_IP > .digital_ocean_env
+echo RESERVED_IP=$RESERVED_IP >> .digital_ocean_env
+echo DROPLET_ID=$DROPLET_ID >> .digital_ocean_env
+echo FIREWALL_ID=$FIREWALL_ID >> .digital_ocean_env
+echo DIGITAL_OCEAN_APP_USER=$DIGITAL_OCEAN_APP_USER >> .digital_ocean_env
+
+cat ./.digital_ocean_env
+

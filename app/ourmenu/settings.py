@@ -36,12 +36,6 @@ CSRF_TRUSTED_ORIGINS = ["https://ourmeals.online"]
 CSRF_ALLOWED_ORIGINS = ["https://ourmeals.online"]
 CORS_ORIGINS_WHITELIST = ["https://ourmeals.online"]
 
-import logging
-
-   logger = logging.getLogger(__name__)
-
-   # Log the CSRF_TRUSTED_ORIGINS
-   logger.debug(f"CSRF_TRUSTED_ORIGINS: {CSRF_TRUSTED_ORIGINS}")
 
 # Application definition
 INSTALLED_APPS = [
@@ -160,3 +154,43 @@ LOGOUT_REDIRECT_URL = '/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,  # Keep default logging settings
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {  # Logs to the console
+            'level': 'DEBUG',  # Log everything at DEBUG level and above
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {  # Logs to a file
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'django_debug.log',  # Log file location
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {  # General Django logs
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.security.csrf': {  # Specific logger for CSRF issues
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

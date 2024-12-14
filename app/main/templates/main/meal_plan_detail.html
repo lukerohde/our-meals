@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{{ meal_plan.name }}</h1>
+    <p><strong>Owner:</strong> {{ meal_plan.owner.username }}</p>
+    
+    {% if is_member %}
+        <!-- Leave Meal Plan Button -->
+        {% if user != meal_plan.owner %}
+            <form action="{% url 'leave_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Leave Meal Plan</button>
+            </form>
+        {% endif %}
+    {% elif user.is_authenticated %}
+        <!-- Join Meal Plan Button -->
+        <form action="{% url 'join_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Join Meal Plan</button>
+            <small>This will become your default meal plan until you leave</small>
+        </form>
+    {% endif %}
+    
+    {% if is_member %}
+        <!-- Edit Options for Members -->
+        <p>
+            <strong>Share link:</strong> 
+            <a href="{% url 'meal_plan_detail' meal_plan.shareable_link %}" onclick="copyLink()">
+                {{ meal_plan.shareable_link }}
+            </a>
+            <script>
+                function copyLink() {
+                    const link = "{{ request.build_absolute_uri|slice:':-1' }}";
+                    navigator.clipboard.writeText(link).then(() => {
+                        alert('Link copied to clipboard!');
+                    }, () => {
+                        alert('Failed to copy the link.');
+                    });
+                }
+            </script>
+        </p>
+
+        
+    {% endif %}
+    
+    <h2>Recipes</h2>
+    {% for recipe in meal_plan.recipes.all %}
+        <div>
+            <h3>{{ recipe.title }}</h3>
+            <p>{{ recipe.description }}</p>
+            <!-- Display ingredients and methods -->
+        </div>
+    {% empty %}
+        <p>No recipes in this meal plan.</p>
+    {% endfor %}
+    
+{% endblock %} 

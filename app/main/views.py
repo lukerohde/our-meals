@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Collection, Recipe, Meal, Ingredient, MethodStep
+from .models import Collection, Recipe, Meal, Ingredient, MethodStep, MealPlan, Membership
 from .forms import CollectionForm
 import requests
 from bs4 import BeautifulSoup
@@ -10,14 +10,47 @@ from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 from django.db import transaction
 import logging
+from collections import defaultdict
 
 # Configure logger
 logger = logging.getLogger(__name__)
 
+
+# @login_required
+# def collection_list(request):
+#     collections = Collection.objects.filter(user=request.user)
+#     return render(request, 'main/collection_list copy.html', {'collections': collections})
+
 @login_required
 def collection_list(request):
-    collections = Collection.objects.filter(user=request.user)
-    return render(request, 'main/collection_list.html', {'collections': collections})
+    # import ipdb; ipdb.set_trace()
+    # collections = Collection.objects.filter(user=request.user)
+    # return render(request, 'main/collection_list.html', {'collections': collections})
+
+    # Get the latest meal plan the user belongs to
+    latest_meal_plan = request.user.memberships.order_by('-joined_at').first().meal_plan
+    
+    if latest_meal_plan:
+        # Get members of the latest meal plan excluding the current user
+        members = Membership.objects.filter(meal_plan=latest_meal_plan).exclude(user=request.user).select_related('user')
+        
+        # Get collections of all members
+        member_collections = Collection.objects.filter(user__in=[membership.user for membership in members])
+    else:
+        member_collections = Collection.objects.none()
+    
+    # Group collections by owner
+    grouped_collections = {}
+    
+    # Add user's own collections first
+    grouped_collections['You'] = Collection.objects.filter(user=request.user)
+    
+    # Add collections from meal plan members
+    for membership in members:
+        grouped_collections[membership.user.username] = Collection.objects.filter(user=membership.user)
+    
+    result = render(request, 'main/collection_list_grouped.html', {'grouped_collections': grouped_collections})
+    return result
 
 @login_required
 def collection_create(request):
@@ -217,3 +250,58 @@ def meal_detail(request, pk):
     }
     
     return render(request, 'main/meal_detail.html', context)
+
+def meal_plan_detail(request, shareable_link):
+    """
+    Display a meal plan based on the shareable link. Accessible to both authenticated members and unauthenticated users.
+    """
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    
+    # Check if user is authenticated and is a member
+    if request.user.is_authenticated:
+        is_member = Membership.objects.filter(user=request.user, meal_plan=meal_plan).exists()
+    else:
+        is_member = False
+    
+    context = {
+        'meal_plan': meal_plan,
+        'is_member': is_member,
+    }
+    
+    return render(request, 'main/meal_plan_detail.html', context)
+
+@login_required
+def join_meal_plan(request, shareable_link):
+    """
+    Allow a user to join a meal plan using its shareable link.
+    """
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    
+    # Check if user is already a member
+    if Membership.objects.filter(user=request.user, meal_plan=meal_plan).exists():
+        messages.error(request, "You are already a member of this meal plan.")
+        return redirect('meal_plan_detail', shareable_link=shareable_link)
+    
+    # Add user to the meal plan
+    Membership.objects.create(user=request.user, meal_plan=meal_plan)
+    messages.success(request, f"You have successfully joined the meal plan '{meal_plan.name}'.")
+    return redirect('meal_plan_detail', shareable_link=shareable_link)
+
+@login_required
+def leave_meal_plan(request, shareable_link):
+    """
+    Allow a user to leave their current meal plan.
+    """
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    if request.user == meal_plan.owner:
+        messages.error(request, "Owners cannot leave their own meal plan.")
+        return redirect('meal_plan_detail', shareable_link=shareable_link)
+    
+    membership = Membership.objects.filter(user=request.user, meal_plan=meal_plan).first()
+    if membership:
+        membership.delete()
+        messages.success(request, f"You have left the meal plan '{meal_plan.name}'.")
+    else:
+        messages.error(request, "You are not a member of this meal plan.")
+    
+    return redirect('collection_list')

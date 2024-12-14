@@ -1,0 +1,8 @@
+  {% for owner, collections in grouped_collections.items %}
+      <h2>{{ owner }}</h2>
+      <ul>
+          {% for collection in collections %}
+              <li>{{ collection.name }}</li>
+          {% endfor %}
+      </ul>
+  {% endfor %} 

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from .utils import convert_to_grams
+import uuid
 
 class Collection(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='collections')
@@ -52,3 +53,29 @@ class MethodStep(models.Model):
 
     def __str__(self):
         return f"Step {self.id}: {self.description[:50]}" 
+
+class MealPlan(models.Model):
+    name = models.CharField(max_length=255)
+    owner = models.ForeignKey(User, related_name='owned_mealplans', on_delete=models.CASCADE)
+    shareable_link = models.CharField(max_length=100, unique=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.shareable_link:
+            self.shareable_link = generate_unique_link()
+        super().save(*args, **kwargs)
+
+    # ... existing methods ...
+
+
+class Membership(models.Model):
+    user = models.ForeignKey(User, related_name='memberships', on_delete=models.CASCADE)
+    meal_plan = models.ForeignKey(MealPlan, related_name='memberships', on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'meal_plan')
+
+
+# Helper function to generate unique shareable links
+def generate_unique_link():
+    return str(uuid.uuid4())

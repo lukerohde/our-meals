@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Your Collections</h1>
+    <a href="{% url 'collection_create' %}" class="btn btn-primary">Create New Collection</a>
+    <ul class="list-group mt-3">
+    {% for owner, collections in grouped_collections.items %}
+        <p>
+        <h4>{{ owner }}</h4>
+        <ul class="list-group mt-2">
+            {% for collection in collections %}
+            <li class="list-group-item">
+                <h5><a href="{% url 'collection_detail' collection.pk %}">{{ collection.title }}</a></h5>
+                <p>{{ collection.description }}</p>
+            </li>
+            {% empty %}
+            <li class="list-group-item">No collections found.</li>
+            {% endfor %}
+        </ul>
+    </p>
+    {% endfor %}
+    </ul>
+    
+{% endblock %}

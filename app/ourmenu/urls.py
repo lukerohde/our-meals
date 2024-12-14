@@ -27,4 +27,6 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    print(settings.CSRF_TRUSTED_ORIGINS)
+    
+    
+print(settings.CSRF_TRUSTED_ORIGINS)

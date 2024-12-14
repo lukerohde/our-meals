@@ -25,11 +25,16 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-p6y$!zu4e=4m_=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.environ.get('DJANGO_DEBUG', '0') == '1')
 
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
+# ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
 
-# Construct CSRF_TRUSTED_ORIGINS from ALLOWED_HOSTS
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host]
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# # Construct CSRF_TRUSTED_ORIGINS from ALLOWED_HOSTS
+# CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host]
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+ALLOWED_HOSTS = ["ourmeals.online"]
+CSRF_TRUSTED_ORIGINS = ["https://ourmeals.online"]
+CSRF_ALLOWED_ORIGINS = ["https://ourmeals.online"]
+CORS_ORIGINS_WHITELIST = ["https://ourmeals.online"]
 
 import logging
 

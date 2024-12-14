@@ -23,16 +23,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-p6y$!zu4e=4m_=9@=l24z9_=!0+c(e2hd__wpmp=c7(+xv$(kw')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(os.environ.get('DJANGO_DEBUG', '0') == '1')
-
-# ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
-
-# # Construct CSRF_TRUSTED_ORIGINS from ALLOWED_HOSTS
-# CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host]
+DEBUG = bool(os.environ.get('DJANGO_DEBUG', '0').lower() in ('1', 'true'))
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-ALLOWED_HOSTS = ["ourmeals.online"]
-CSRF_TRUSTED_ORIGINS = ["https://ourmeals.online"]
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host]
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 
@@ -56,8 +51,8 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    #'django.middleware.csrf.CsrfViewMiddleware',
-    'verbose_csrf_middleware.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    #'verbose_csrf_middleware.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -155,38 +150,42 @@ LOGOUT_REDIRECT_URL = '/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Logging
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '[{asctime}] {levelname} {name} {message}',
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
             'style': '{',
         },
     },
     'handlers': {
         'console': {
-            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+            'formatter': 'simple',
+            'level': 'INFO',  # Change this to INFO for less verbosity
         },
         'file': {
-            'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'django_debug.log',
+            'filename': BASE_DIR / 'debug.log',
             'formatter': 'verbose',
+            'level': 'WARNING',  # Log warnings and errors to file
         },
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+            'level': 'INFO',  # Only log at INFO level or higher
             'propagate': True,
         },
         'django.security.csrf': {
             'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-            'propagate': False,
+            'level': 'INFO',  # Reduce CSRF logs to INFO level
         },
     },
 }

@@ -18,3 +18,4 @@ app/staticfiles
 .DS_Store
 node_modules
 app/ai_helpers.log
+debug.log

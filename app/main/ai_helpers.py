@@ -4,12 +4,7 @@ import re
 import json
 import logging
 
-# Configure logging
-logging.basicConfig(
-    filename='ai_helpers.log',
-    level=logging.DEBUG,
-    format='%(asctime)s:%(levelname)s:%(message)s'
-)
+logger = logging.getLogger(__name__)
 
 def extract_json(response_text):
     """
@@ -58,8 +53,8 @@ def extract_json(response_text):
         parsed_json = json.loads(json_str)
         return parsed_json
     except json.JSONDecodeError as e:
-        logging.error(f"JSON decoding failed: {e}")
-        logging.debug(f"Failed JSON string: {json_str}")
+        logger.error(f"JSON decoding failed: {e}")
+        logger.debug(f"Failed JSON string: {json_str}")
         raise ValueError(f"JSON decoding failed: {e}")
 
 def parse_recipe_with_genai(raw_text):

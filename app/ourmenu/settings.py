@@ -33,9 +33,8 @@ DEBUG = bool(os.environ.get('DJANGO_DEBUG', '0') == '1')
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 ALLOWED_HOSTS = ["ourmeals.online"]
 CSRF_TRUSTED_ORIGINS = ["https://ourmeals.online"]
-CSRF_ALLOWED_ORIGINS = ["https://ourmeals.online"]
-CORS_ORIGINS_WHITELIST = ["https://ourmeals.online"]
-
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
 
 # Application definition
 INSTALLED_APPS = [
@@ -57,7 +56,8 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
+    'verbose_csrf_middleware.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -157,37 +157,33 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': False,  # Keep default logging settings
+    'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
+            'format': '[{asctime}] {levelname} {name} {message}',
             'style': '{',
         },
     },
     'handlers': {
-        'console': {  # Logs to the console
-            'level': 'DEBUG',  # Log everything at DEBUG level and above
+        'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        'file': {  # Logs to a file
+        'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'django_debug.log',  # Log file location
+            'filename': BASE_DIR / 'django_debug.log',
             'formatter': 'verbose',
         },
     },
     'loggers': {
-        'django': {  # General Django logs
+        'django': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
-        'django.security.csrf': {  # Specific logger for CSRF issues
+        'django.security.csrf': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,

@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from .utils import convert_to_grams
-import uuid
+from uuid import uuid4
 
 class Collection(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='collections')
@@ -12,15 +12,32 @@ class Collection(models.Model):
     def __str__(self):
         return self.title
 
+
+
+class MealPlan(models.Model):
+    name = models.CharField(max_length=255)
+    owner = models.ForeignKey(User, related_name='owned_mealplans', on_delete=models.CASCADE)
+    shareable_link = models.UUIDField(default=uuid4, unique=True, editable=False)
+
+    def __str__(self):
+        return self.name
+
 class Meal(models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='meals')
     url = models.URLField(null=True, blank=True)
     photo = models.ImageField(upload_to='meal_photos/', null=True, blank=True)
     title = models.CharField(max_length=255)
+    meal_plan = models.ManyToManyField(MealPlan, related_name='meals')
     description = models.TextField()
 
     def __str__(self):
         return self.title
+
+    def in_plan(self, meal_plan):
+        if meal_plan:
+            return self.meal_plan.filter(id=meal_plan.id).exists()
+
+        return False
 
 class Recipe(models.Model):
     meal = models.ForeignKey(Meal, on_delete=models.CASCADE, related_name='recipes')
@@ -54,19 +71,6 @@ class MethodStep(models.Model):
     def __str__(self):
         return f"Step {self.id}: {self.description[:50]}" 
 
-class MealPlan(models.Model):
-    name = models.CharField(max_length=255)
-    owner = models.ForeignKey(User, related_name='owned_mealplans', on_delete=models.CASCADE)
-    shareable_link = models.CharField(max_length=100, unique=True, blank=True)
-
-    def save(self, *args, **kwargs):
-        if not self.shareable_link:
-            self.shareable_link = generate_unique_link()
-        super().save(*args, **kwargs)
-
-    # ... existing methods ...
-
-
 class Membership(models.Model):
     user = models.ForeignKey(User, related_name='memberships', on_delete=models.CASCADE)
     meal_plan = models.ForeignKey(MealPlan, related_name='memberships', on_delete=models.CASCADE)
@@ -74,8 +78,3 @@ class Membership(models.Model):
 
     class Meta:
         unique_together = ('user', 'meal_plan')
-
-
-# Helper function to generate unique shareable links
-def generate_unique_link():
-    return str(uuid.uuid4())

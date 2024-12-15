@@ -39,19 +39,18 @@
                 }
             </script>
         </p>
-
         
     {% endif %}
     
     <h2>Recipes</h2>
-    {% for recipe in meal_plan.recipes.all %}
+    {% for meal in meal_plan.meals.all %}
         <div>
-            <h3>{{ recipe.title }}</h3>
-            <p>{{ recipe.description }}</p>
+            <h3>{{ meal.title }}</h3>
+            <p>{{ meal.description }}</p>
             <!-- Display ingredients and methods -->
         </div>
     {% empty %}
-        <p>No recipes in this meal plan.</p>
+        <p>No meals in this meal plan.</p>
     {% endfor %}
     
 {% endblock %} 

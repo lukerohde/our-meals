@@ -11,6 +11,8 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 import logging
 from collections import defaultdict
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -21,18 +23,20 @@ logger = logging.getLogger(__name__)
 #     collections = Collection.objects.filter(user=request.user)
 #     return render(request, 'main/collection_list copy.html', {'collections': collections})
 
+def latest_meal_plan(request):
+    latest_membership = request.user.memberships.order_by('-joined_at').first()
+    latest_meal_plan = latest_membership.meal_plan if latest_membership else None
+    return latest_meal_plan
+
 @login_required
 def collection_list(request):
     # import ipdb; ipdb.set_trace()
     # collections = Collection.objects.filter(user=request.user)
     # return render(request, 'main/collection_list.html', {'collections': collections})
 
-    # Get the latest meal plan the user belongs to
-    latest_meal_plan = request.user.memberships.order_by('-joined_at').first().meal_plan
-    
-    if latest_meal_plan:
+    if latest_meal_plan(request):
         # Get members of the latest meal plan excluding the current user
-        members = Membership.objects.filter(meal_plan=latest_meal_plan).exclude(user=request.user).select_related('user')
+        members = Membership.objects.filter(meal_plan=latest_meal_plan(request)).exclude(user=request.user).select_related('user')
         
         # Get collections of all members
         member_collections = Collection.objects.filter(user__in=[membership.user for membership in members])
@@ -227,7 +231,16 @@ def generate_grocery_list(request):
 @login_required
 def collection_detail(request, pk):
     collection = get_object_or_404(Collection, pk=pk)
-    return render(request, 'main/collection_detail.html', {'collection': collection})
+    
+    meal_plan = latest_meal_plan(request)
+    meal_plan_recipes = meal_plan.meals.values_list('id', flat=True) if meal_plan else []
+
+    context = {
+        'collection': collection,
+        'meal_plan_recipes': meal_plan_recipes
+    }
+    
+    return render(request, 'main/collection_detail.html', context)
 
 @login_required
 def meal_detail(request, pk):
@@ -305,3 +318,27 @@ def leave_meal_plan(request, shareable_link):
         messages.error(request, "You are not a member of this meal plan.")
     
     return redirect('collection_list')
+
+@login_required
+def toggle_meal_in_meal_plan(request, meal_id):
+    """
+    Adds a meal to the user's latest meal plan if it's not already included.
+    """
+    meal_plan = latest_meal_plan(request)
+
+    if not meal_plan:
+        messages.error(request, "No active meal plan found.")
+        return redirect('collection_detail', pk=request.GET.get('collection_id'))
+
+    meal = get_object_or_404(Meal, id=meal_id, collection__user=request.user)
+    
+    if meal_plan.meals.filter(id=meal.id).exists():
+        meal_plan.meals.remove(meal)
+        messages.info(request, f"'{meal.title}' has been removed from your meal plan.")
+    else:
+        meal_plan.meals.add(meal)
+        messages.success(request, f"'{meal.title}' has been added to your meal plan.")
+    
+    meal_plan.save()
+        
+    return redirect('collection_detail', pk=request.GET.get('collection_id'))

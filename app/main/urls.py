@@ -13,5 +13,6 @@ urlpatterns = [
     path('meal-plan/<str:shareable_link>/', views.meal_plan_detail, name='meal_plan_detail'),
     path('meal-plan/<str:shareable_link>/join/', views.join_meal_plan, name='join_meal_plan'),
     path('meal-plan/<str:shareable_link>/leave/', views.leave_meal_plan, name='leave_meal_plan'),
+    path('toggle-meal/<int:meal_id>/', views.toggle_meal_in_meal_plan, name='toggle_meal_in_meal_plan'),
     # Add other URL patterns as needed
 ] 

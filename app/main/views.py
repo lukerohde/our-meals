@@ -199,11 +199,6 @@ def scrape_recipe(request):
     return redirect('meal_detail', pk=meal.id)
 
 
-@login_required
-def meal_plan(request):
-    collections = Collection.objects.filter(user=request.user)
-    return render(request, 'main/meal_plan.html', {'collections': collections})
-
 @require_POST
 @login_required
 def generate_grocery_list(request):
@@ -253,7 +248,7 @@ def meal_detail(request, pk):
     Returns:
         HttpResponse: Rendered meal_detail.html template.
     """
-    meal = get_object_or_404(Meal, pk=pk, collection__user=request.user)
+    meal = get_object_or_404(Meal, pk=pk)
     recipes = meal.recipes.all()
     
     context = {
@@ -334,7 +329,7 @@ def toggle_meal_in_meal_plan(request, meal_id):
         messages.error(request, "No active meal plan found.")
         return redirect('collection_detail', pk=request.GET.get('collection_id'))
 
-    meal = get_object_or_404(Meal, id=meal_id, collection__user=request.user)
+    meal = get_object_or_404(Meal, id=meal_id)
     
     if meal_plan.meals.filter(id=meal.id).exists():
         meal_plan.meals.remove(meal)

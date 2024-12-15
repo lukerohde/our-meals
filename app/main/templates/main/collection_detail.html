@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-12 col-lg-8">
+
         <h1>{{ collection.title }}</h1>
         <p>{{ collection.description }}</p>
         <h2>Meals</h2>
@@ -22,12 +20,6 @@
         </form>
 
         {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes %}
-      </div>
-      <div class="col-12 col-lg-4">
-        <!-- Related Items or Additional Information -->
-      </div>
-    </div>
-  </div>
 
 {% endblock %}
 

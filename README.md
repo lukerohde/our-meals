@@ -4,25 +4,44 @@ A totally unnessary django app to manage our menu - it uses GenAI to scrape reci
 
 TODO
 * Edit a meal
+* AI instruction for meal scraping
+* Edit a meal plan - change its name
 * DONE Delete a meal
 * Delete a collection
 * Account settings w/Set region
-* Convert ingredients to region
 * DONE Add to meal plan
 * DONE Share meal plan with friends
 * DONE Show shopping list
-* Share recipe book with friends
-* Import nice pictures
-* Display pictures
+* Share meal collection with friends?
+* Import and display pictures
 * DONE Accept a family invite
 * DONE Invite a family member
-* Improve sign up
+* Improve code
+    * Tests!! 
+    * Refactor scrapping - that's super ugly
+    * Refactor authorisation check (meal plan member)
+* Improve security
+    * Unguessable collection and recipe links
+    * Read only mode on collections and recipies that aren't yours (or your meal plans)
     * Invitation only sign up - stop randos joining during rollout 
     * a capture for sign up
+* Improve sign up
     * De-restrict passwords, allowing passphrases
     * Allow emails for username
     * DONE Sign up when joining a meal plan
     * Sign up or sign in, as the same page? 
+* Improve meal import
+    * Handle coles online and www.deliciousmagazine.co.uk 
+    * Checkout python recipe-scraper
+    * Import from photos using openai 4o or similar
+    * Import from pdf 
+    * Convert ingredients to region
+    * Better handle odd units (to taste, one piece of egg)
+* Improve Nav
+    * Get to collections from meal plan
+    * Meal plan is more prominent
+    * Can add meal to meal plan from meal details page
+
 
 
 

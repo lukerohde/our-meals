@@ -359,14 +359,20 @@ def delete_meal(request, meal_id):
     next_url = request.POST.get('next')
     return redirect(next_url)
 
+@require_POST
+@login_required
 def create_grocery_list(request, shareable_link):
     meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
     ingredients = gather_ingredients(meal_plan)
-    formatted_list = summarize_grocery_list_with_genai(ingredients)
+    grocery_list_instruction = request.POST.get('grocery_list_instruction', '')
+    formatted_list = summarize_grocery_list_with_genai(ingredients, grocery_list_instruction)
     meal_plan.grocery_list = formatted_list
+    meal_plan.grocery_list_instruction = grocery_list_instruction
     meal_plan.save()
     return redirect('meal_plan_detail', shareable_link=shareable_link)
 
+@require_POST
+@login_required
 def save_grocery_list(request, shareable_link):
     meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
     if request.method == 'POST':

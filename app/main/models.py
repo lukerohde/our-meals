@@ -19,6 +19,7 @@ class MealPlan(models.Model):
     owner = models.ForeignKey(User, related_name='owned_mealplans', on_delete=models.CASCADE)
     shareable_link = models.UUIDField(default=uuid4, unique=True, editable=False)
     grocery_list = models.TextField(blank=True, null=True)
+    grocery_list_instruction = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name

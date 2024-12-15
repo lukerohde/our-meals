@@ -51,8 +51,12 @@
     <p>
         <p>
             <h2>Grocery List</h2>
+            <label for="grocery-list-instruction">Grocery List AI Instructions:</label>
             <form method="post" action="{% url 'create_grocery_list' meal_plan.shareable_link %}">
                 {% csrf_token %}
+                <div class="form-group">
+                    <textarea class="form-control" id="grocery-list-instruction" name="grocery_list_instruction" rows="3" placeholder="e.g., Separate items for the Asian grocer, add non-food items.">{{ meal_plan.grocery_list_instruction }}</textarea>
+                </div>
                 <button type="submit" class="btn btn-secondary">Create Grocery List</button>
             </form>
         </p>

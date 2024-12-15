@@ -4,19 +4,26 @@ A totally unnessary django app to manage our menu - it uses GenAI to scrape reci
 
 TODO
 * Edit a meal
-* Delete a meal
+* DONE Delete a meal
 * Delete a collection
 * Account settings w/Set region
-* Convert to region
-* Add to meal plan
-* Share meal plan with friends
-* Show shopping list
+* Convert ingredients to region
+* DONE Add to meal plan
+* DONE Share meal plan with friends
+* DONE Show shopping list
 * Share recipe book with friends
 * Import nice pictures
 * Display pictures
-* Accept a family invite
-* Invite a family member
-* Invitation only mode, a capture for sign up
+* DONE Accept a family invite
+* DONE Invite a family member
+* Improve sign up
+    * Invitation only sign up - stop randos joining during rollout 
+    * a capture for sign up
+    * De-restrict passwords, allowing passphrases
+    * Allow emails for username
+    * DONE Sign up when joining a meal plan
+    * Sign up or sign in, as the same page? 
+
 
 
 # Setup

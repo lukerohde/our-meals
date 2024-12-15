@@ -13,6 +13,7 @@ import logging
 from collections import defaultdict
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+# from django.contrib.auth import login
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -280,22 +281,23 @@ def meal_plan_detail(request, shareable_link):
     
     return render(request, 'main/meal_plan_detail.html', context)
 
-@login_required
 def join_meal_plan(request, shareable_link):
-    """
-    Allow a user to join a meal plan using its shareable link.
-    """
-    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
-    
-    # Check if user is already a member
-    if Membership.objects.filter(user=request.user, meal_plan=meal_plan).exists():
-        messages.error(request, "You are already a member of this meal plan.")
+    if request.user.is_authenticated:
+        # Existing code for authenticated users
+        meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+        
+        if Membership.objects.filter(user=request.user, meal_plan=meal_plan).exists():
+            messages.error(request, "You are already a member of this meal plan.")
+            return redirect('meal_plan_detail', shareable_link=shareable_link)
+        
+        Membership.objects.create(user=request.user, meal_plan=meal_plan)
+        messages.success(request, f"You have successfully joined the meal plan '{meal_plan.name}'.")
         return redirect('meal_plan_detail', shareable_link=shareable_link)
-    
-    # Add user to the meal plan
-    Membership.objects.create(user=request.user, meal_plan=meal_plan)
-    messages.success(request, f"You have successfully joined the meal plan '{meal_plan.name}'.")
-    return redirect('meal_plan_detail', shareable_link=shareable_link)
+    else:
+        # Handle unauthenticated users
+        request.session['joining_shareable_link'] = shareable_link
+        messages.info(request, "Please sign up to join the meal plan.")
+        return redirect('account_signup')  # Ensure you have a URL named 'signup'
 
 @login_required
 def leave_meal_plan(request, shareable_link):
@@ -380,3 +382,14 @@ def gather_ingredients(meal_plan):
         for recipe in meal.recipes.all():
             ingredients.extend(recipe.ingredients.all())
     return ingredients
+
+# def signup(request):
+#     if request.method == 'POST':
+#         form = SignUpForm(request.POST)
+#         if form.is_valid():
+#             user = form.save()
+#             login(request, user)  # Automatically log in the user
+#             return redirect('meal_plan_detail', shareable_link=request.session.get('joining_shareable_link', user.mealplan.shareable_link))
+#     else:
+#         form = SignUpForm()
+#     return render(request, 'registration/signup.html', {'form': form})

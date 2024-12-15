@@ -13,10 +13,11 @@
                     <button type="submit" class="btn btn-danger">Leave Meal Plan</button>
                 </form>
             {% endif %}
-        {% elif user.is_authenticated %}
+        {% else %}
             <!-- Join Meal Plan Button -->
             <form action="{% url 'join_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
                 {% csrf_token %}
+                <input type="hidden" name="meal_plan_shareable_link" value="{{ meal_plan.shareable_link }}">
                 <button type="submit" class="btn btn-success">Join Meal Plan</button>
                 <small>This will become your default meal plan until you leave</small>
             </form>

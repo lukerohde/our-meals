@@ -34,7 +34,7 @@
             <ul class="navbar-nav ml-auto text-right">
                 {% if user.is_authenticated and latest_meal_plan.shareable_link %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'meal_plan_detail' latest_meal_plan.shareable_link %}">Meal Plan</a>
+                        <a class="nav-link" href="{% url 'meal_plan_detail' latest_meal_plan.shareable_link %}">{{ latest_meal_plan.name }}</a>
                </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'account_logout' %}">Logout</a>

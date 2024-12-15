@@ -68,7 +68,7 @@
             <form method="POST">
                 {% csrf_token %}
                 <div class="form-group">
-                    <textarea name="grocery_list" class="form-control">{{ meal_plan.grocery_list }}</textarea>
+                    <textarea name="grocery_list" class="form-control" rows="30">{{ meal_plan.grocery_list }}</textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Update Grocery List</button>
             </form>

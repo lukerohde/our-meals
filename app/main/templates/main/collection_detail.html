@@ -19,7 +19,7 @@
           <button type="submit" class="btn btn-primary mt-2">Import Recipe</button>
         </form>
 
-        {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes %}
+        {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=True %}
 
 {% endblock %}
 

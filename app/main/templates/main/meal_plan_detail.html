@@ -45,7 +45,7 @@
     </p>
     <p>
         <h2>Recipes</h2>
-        {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes %}
+        {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=is_member %}
     </p>
     
     <p>

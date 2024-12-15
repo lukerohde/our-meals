@@ -69,136 +69,135 @@ def collection_create(request):
         form = CollectionForm()
     return render(request, 'main/collection_form.html', {'form': form})
 
+@require_POST
 @login_required
 @transaction.atomic
 def scrape_recipe(request):
-    if request.method == 'POST':
-        recipe_url = request.POST.get('recipe_url')
-        collection_id = request.POST.get('collection_id')
-        collection = get_object_or_404(Collection, id=collection_id, user=request.user)
+    recipe_url = request.POST.get('recipe_url')
+    collection_id = request.POST.get('collection_id')
+    collection = get_object_or_404(Collection, id=collection_id)
+    
+    logger.info(f"User {request.user.username} is scraping recipe from URL: {recipe_url}")
+    try:
+        # Fetch the recipe page
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+                            'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+                            'Chrome/58.0.3029.110 Safari/537.3',
+            'Referer': 'https://www.google.com/',
+            'Accept-Language': 'en-US,en;q=0.9',
+            #'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive'
+        }
+        response = requests.get(recipe_url, headers=headers)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        logger.error(f"Failed to fetch the recipe URL: {recipe_url}. Error: {e}")
+        messages.error(request, f"Failed to fetch the recipe URL: {e}")
+        return redirect('collection_detail', pk=collection.id)
+    
+    # Parse the page content
+    soup = BeautifulSoup(response.text, 'html.parser')
+    raw_text = soup.get_text(separator='\n')  # Use separator to preserve line breaks
+    
+    # Parse the raw text into structured data using GenAI
+    structured_data = parse_recipe_with_genai(raw_text)
+    # import pdb; pdb.set_trace()
+    if not structured_data:
+        logger.error(f"Failed to parse the recipe from URL: {recipe_url}")
+        messages.error(request, "Failed to parse the recipe. Please try again.")
+        return redirect('collection_detail', pk=collection.id)
+    
+    try:
+        # Extract Meal information
+        meal_title = structured_data.get('title', 'New Meal')
+        meal_description = structured_data.get('description', '')
         
-        logger.info(f"User {request.user.username} is scraping recipe from URL: {recipe_url}")
-        try:
-            # Fetch the recipe page
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-                              'AppleWebKit/537.36 (KHTML, like Gecko) ' +
-                              'Chrome/58.0.3029.110 Safari/537.3',
-                'Referer': 'https://www.google.com/',
-                'Accept-Language': 'en-US,en;q=0.9',
-                #'Accept-Encoding': 'gzip, deflate, br',
-                'Connection': 'keep-alive'
-            }
-            response = requests.get(recipe_url, headers=headers)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            logger.error(f"Failed to fetch the recipe URL: {recipe_url}. Error: {e}")
-            messages.error(request, f"Failed to fetch the recipe URL: {e}")
-            return redirect('collection_detail', pk=collection.id)
+        if not meal_title:
+            raise ValueError("Meal title is missing in the parsed data.")
         
-        # Parse the page content
-        soup = BeautifulSoup(response.text, 'html.parser')
-        raw_text = soup.get_text(separator='\n')  # Use separator to preserve line breaks
+        # Create the Meal instance
+        meal = Meal.objects.create(
+            collection=collection,
+            title=meal_title,
+            description=meal_description,
+            url=recipe_url,
+        )
         
-        # Parse the raw text into structured data using GenAI
-        structured_data = parse_recipe_with_genai(raw_text)
-        # import pdb; pdb.set_trace()
-        if not structured_data:
-            logger.error(f"Failed to parse the recipe from URL: {recipe_url}")
-            messages.error(request, "Failed to parse the recipe. Please try again.")
-            return redirect('collection_detail', pk=collection.id)
+        logger.info(f"Created Meal: {meal.title} (ID: {meal.id})")
         
-        try:
-            # Extract Meal information
-            meal_title = structured_data.get('title', 'New Meal')
-            meal_description = structured_data.get('description', '')
+        # Iterate over each Recipe in the structured data
+        for recipe_data in structured_data.get('recipes', []):
+            recipe_title = recipe_data.get('title')
+            recipe_description = recipe_data.get('description', '')
             
-            if not meal_title:
-                raise ValueError("Meal title is missing in the parsed data.")
+            if not recipe_title:
+                logger.warning("Recipe title is missing. Skipping this recipe.")
+                continue  # Skip recipes without a title
             
-            # Create the Meal instance
-            meal = Meal.objects.create(
-                collection=collection,
-                title=meal_title,
-                description=meal_description,
-                url=recipe_url,
+            # Create the Recipe instance
+            recipe = Recipe.objects.create(
+                meal=meal,
+                title=recipe_title,
+                description=recipe_description,
             )
             
-            logger.info(f"Created Meal: {meal.title} (ID: {meal.id})")
+            logger.info(f"Created Recipe: {recipe.title} (ID: {recipe.id}) under Meal ID: {meal.id}")
             
-            # Iterate over each Recipe in the structured data
-            for recipe_data in structured_data.get('recipes', []):
-                recipe_title = recipe_data.get('title')
-                recipe_description = recipe_data.get('description', '')
+            # Iterate over Ingredients
+            for ingredient_data in recipe_data.get('ingredients', []):
+                ingredient_name = ingredient_data.get('name')
+                ingredient_amount = ingredient_data.get('amount')
+                ingredient_unit = ingredient_data.get('unit')
                 
-                if not recipe_title:
-                    logger.warning("Recipe title is missing. Skipping this recipe.")
-                    continue  # Skip recipes without a title
+                if not ingredient_name:
+                    logger.warning("Ingredient name is missing. Skipping this ingredient.")
+                    continue  # Skip ingredients without a name
                 
-                # Create the Recipe instance
-                recipe = Recipe.objects.create(
-                    meal=meal,
-                    title=recipe_title,
-                    description=recipe_description,
+                # Convert amount to Decimal if possible
+                try:
+                    # Ensure amount is a string before conversion
+                    if isinstance(ingredient_amount, (int, float)):
+                        ingredient_amount = str(ingredient_amount)
+                    elif not isinstance(ingredient_amount, str):
+                        ingredient_amount = ''
+                    amount_decimal = Decimal(ingredient_amount)
+                except (InvalidOperation, TypeError):
+                    amount_decimal = None  # Handle non-numeric amounts like "to taste"
+                
+                # Create the Ingredient instance
+                Ingredient.objects.create(
+                    recipe=recipe,
+                    name=ingredient_name,
+                    amount=amount_decimal,
+                    unit=ingredient_unit
                 )
                 
-                logger.info(f"Created Recipe: {recipe.title} (ID: {recipe.id}) under Meal ID: {meal.id}")
-                
-                # Iterate over Ingredients
-                for ingredient_data in recipe_data.get('ingredients', []):
-                    ingredient_name = ingredient_data.get('name')
-                    ingredient_amount = ingredient_data.get('amount')
-                    ingredient_unit = ingredient_data.get('unit')
-                    
-                    if not ingredient_name:
-                        logger.warning("Ingredient name is missing. Skipping this ingredient.")
-                        continue  # Skip ingredients without a name
-                    
-                    # Convert amount to Decimal if possible
-                    try:
-                        # Ensure amount is a string before conversion
-                        if isinstance(ingredient_amount, (int, float)):
-                            ingredient_amount = str(ingredient_amount)
-                        elif not isinstance(ingredient_amount, str):
-                            ingredient_amount = ''
-                        amount_decimal = Decimal(ingredient_amount)
-                    except (InvalidOperation, TypeError):
-                        amount_decimal = None  # Handle non-numeric amounts like "to taste"
-                    
-                    # Create the Ingredient instance
-                    Ingredient.objects.create(
-                        recipe=recipe,
-                        name=ingredient_name,
-                        amount=amount_decimal,
-                        unit=ingredient_unit
-                    )
-                    
-                    logger.info(f"Added Ingredient: {ingredient_name}, Amount: {ingredient_amount}, Unit: {ingredient_unit} to Recipe ID: {recipe.id}")
-                
-                # Iterate over Method Steps
-                for step in recipe_data.get('method', []):
-                    if not step.strip():
-                        logger.warning("Empty method step encountered. Skipping.")
-                        continue  # Skip empty steps
-                    
-                    # Create the MethodStep instance
-                    MethodStep.objects.create(
-                        recipe=recipe,
-                        description=step.strip()
-                    )
-                    
-                    logger.info(f"Added MethodStep to Recipe ID: {recipe.id}: {step.strip()}")
+                logger.info(f"Added Ingredient: {ingredient_name}, Amount: {ingredient_amount}, Unit: {ingredient_unit} to Recipe ID: {recipe.id}")
             
-            messages.success(request, "Recipe scraped and added successfully!")
-            logger.info(f"Successfully scraped and saved recipe from URL: {recipe_url} for Collection ID: {collection.id}")
-        except Exception as e:
-            logger.exception(f"An error occurred while saving the recipe from URL: {recipe_url}. Error: {e}")
-            messages.error(request, f"An error occurred while saving the recipe: {e}")
-            return redirect('collection_detail', pk=collection.id)
+            # Iterate over Method Steps
+            for step in recipe_data.get('method', []):
+                if not step.strip():
+                    logger.warning("Empty method step encountered. Skipping.")
+                    continue  # Skip empty steps
+                
+                # Create the MethodStep instance
+                MethodStep.objects.create(
+                    recipe=recipe,
+                    description=step.strip()
+                )
+                
+                logger.info(f"Added MethodStep to Recipe ID: {recipe.id}: {step.strip()}")
         
-        return redirect('meal_detail', pk=meal.id)
-    else:
-        return redirect('home')
+        messages.success(request, "Recipe scraped and added successfully!")
+        logger.info(f"Successfully scraped and saved recipe from URL: {recipe_url} for Collection ID: {collection.id}")
+    except Exception as e:
+        logger.exception(f"An error occurred while saving the recipe from URL: {recipe_url}. Error: {e}")
+        messages.error(request, f"An error occurred while saving the recipe: {e}")
+        return redirect('collection_detail', pk=collection.id)
+    
+    return redirect('meal_detail', pk=meal.id)
+
 
 @login_required
 def meal_plan(request):

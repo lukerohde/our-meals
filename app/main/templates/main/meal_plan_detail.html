@@ -49,24 +49,31 @@
     </p>
     
     <p>
+        
         <p>
             <h2>Grocery List</h2>
-            <label for="grocery-list-instruction">Grocery List AI Instructions:</label>
-            <form method="post" action="{% url 'create_grocery_list' meal_plan.shareable_link %}">
-                {% csrf_token %}
-                <div class="form-group">
+            {% if is_member %}
+                <label for="grocery-list-instruction">Grocery List AI Instructions:</label>
+                <form method="post" action="{% url 'create_grocery_list' meal_plan.shareable_link %}">
+                    {% csrf_token %}
+                    <div class="form-group">
                     <textarea class="form-control" id="grocery-list-instruction" name="grocery_list_instruction" rows="3" placeholder="e.g., Separate items for the Asian grocer, add non-food items.">{{ meal_plan.grocery_list_instruction }}</textarea>
                 </div>
                 <button type="submit" class="btn btn-secondary">Create Grocery List</button>
             </form>
+            {% endif %}
         </p>
         
-        <form method="post" action="{% url 'save_grocery_list' meal_plan.shareable_link %}">
-            {% csrf_token %}
-            <div class="form-group">
-            <textarea class="form-control" id="grocery-list" name="grocery_list" rows="10">{{ meal_plan.grocery_list }}</textarea>
-            </div>
-            <button type="submit" class="btn btn-primary">Save Grocery List</button>
-        </form>
+        {% if is_member %}
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <textarea name="grocery_list" class="form-control">{{ meal_plan.grocery_list }}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Grocery List</button>
+            </form>
+        {% else %}
+            <pre>{{ meal_plan.grocery_list }}</pre>
+        {% endif %}
     </p>    
 {% endblock %} 

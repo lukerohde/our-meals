@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Our Menu</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
-    <style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><style>
         body {
             background-color: #f8f0e3;
             font-family: 'Courier New', Courier, monospace;
@@ -35,7 +35,7 @@
                 {% if user.is_authenticated and latest_meal_plan.shareable_link %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'meal_plan_detail' latest_meal_plan.shareable_link %}">Meal Plan</a>
-                   </li>
+               </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'account_logout' %}">Logout</a>
                     </li>
@@ -51,6 +51,18 @@
         {% block content %}
         {% endblock %}
     </div>
+    {% block extra_css %}
+        <style>
+            /* Example CSS */
+            .meal-item .btn i {
+                font-size: 1.2em;
+            }
+            
+            .meal-item .btn {
+                padding: 0.3rem 0.5rem;
+            }
+        </style>
+    {% endblock %}
     <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>

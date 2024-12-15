@@ -348,4 +348,13 @@ def toggle_meal_in_meal_plan(request, meal_id):
     
     next_url = request.POST.get('next')
     return redirect(next_url)
+
+@require_POST
+@login_required
+def delete_meal(request, meal_id):
+    if request.method == 'POST':
+        meal = get_object_or_404(Meal, id=meal_id)
+        meal.delete()
     
+    next_url = request.POST.get('next')
+    return redirect(next_url)

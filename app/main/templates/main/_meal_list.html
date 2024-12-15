@@ -4,18 +4,26 @@
             <a href="{% url 'meal_detail' meal.pk %}">
             {{ meal.title }}
             </a>
-            <form method="POST" action="{% url 'toggle_meal_in_meal_plan' meal.id %}?collection_id={{ collection.id }}">
-                {% csrf_token %}
-                <input type="hidden" name="next" value="{{ request.path }}">
-                <button type="submit" class="btn {% if meal.id in meal_plan_recipes %}btn-danger{% else %}btn-success{% endif %}">
-                    <i class="fas fa-shopping-cart"></i>
-                    {% if meal.id in meal_plan_recipes %}
-                        Remove from Meal Plan
-                    {% else %}
-                        Add to Meal Plan
-                    {% endif %}
-                </button>
-            </form>
+            <div>
+                <form method="POST" action="{% url 'toggle_meal_in_meal_plan' meal.id %}?collection_id={{ collection.id }}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-secondary{% endif %}" title="{% if meal.id in meal_plan_recipes %}Remove from Meal Plan{% else %}Add to Meal Plan{% endif %}">
+                        {% if meal.id in meal_plan_recipes %}
+                            <i class="bi bi-cart-x-fill"></i>
+                        {% else %}
+                            <i class="bi bi-cart-plus-fill"></i>
+                        {% endif %}
+                    </button>
+                </form>
+                <form method="POST" action="{% url 'delete_meal' meal.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-danger" title="Delete Meal" onclick="return confirm('Are you sure you want to delete this meal?');">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </form>
+            </div>
         </li>
     {% empty %}
         <li class="list-group-item">No meals found.</li>

@@ -18,7 +18,7 @@
             <label for="recipe-url">Recipe URL:</label>
             <input type="url" class="form-control" id="recipe-url" name="recipe_url" placeholder="Enter recipe URL" required>
           </div>
-          <button type="submit" class="btn btn-primary mt-2">Submit</button>
+          <button type="submit" class="btn btn-primary mt-2">Import Recipe</button>
         </form>
 
         {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes %}
@@ -30,3 +30,4 @@
   </div>
 
 {% endblock %}
+

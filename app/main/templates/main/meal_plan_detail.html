@@ -1,48 +1,68 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>{{ meal_plan.name }}</h1>
-    <p><strong>Owner:</strong> {{ meal_plan.owner.username }}</p>
-    
-    {% if is_member %}
-        <!-- Leave Meal Plan Button -->
-        {% if user != meal_plan.owner %}
-            <form action="{% url 'leave_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
+    <p>
+        <h1>{{ meal_plan.name }}</h1>
+        <p><strong>Owner:</strong> {{ meal_plan.owner.username }}</p>
+        
+        {% if is_member %}
+            <!-- Leave Meal Plan Button -->
+            {% if user != meal_plan.owner %}
+                <form action="{% url 'leave_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Leave Meal Plan</button>
+                </form>
+            {% endif %}
+        {% elif user.is_authenticated %}
+            <!-- Join Meal Plan Button -->
+            <form action="{% url 'join_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-danger">Leave Meal Plan</button>
+                <button type="submit" class="btn btn-success">Join Meal Plan</button>
+                <small>This will become your default meal plan until you leave</small>
             </form>
         {% endif %}
-    {% elif user.is_authenticated %}
-        <!-- Join Meal Plan Button -->
-        <form action="{% url 'join_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-success">Join Meal Plan</button>
-            <small>This will become your default meal plan until you leave</small>
-        </form>
-    {% endif %}
+        
+        {% if is_member %}
+            <!-- Edit Options for Members -->
+            <p>
+                <strong>Share link:</strong> 
+                <a href="{% url 'meal_plan_detail' meal_plan.shareable_link %}" onclick="copyLink()">
+                    {{ meal_plan.shareable_link }}
+                </a>
+                <script>
+                    function copyLink() {
+                        const link = "{{ request.build_absolute_uri|slice:':-1' }}";
+                        navigator.clipboard.writeText(link).then(() => {
+                            alert('Link copied to clipboard!');
+                        }, () => {
+                            alert('Failed to copy the link.');
+                        });
+                    }
+                </script>
+            </p>
+            
+        {% endif %}
+    </p>
+    <p>
+        <h2>Recipes</h2>
+        {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes %}
+    </p>
     
-    {% if is_member %}
-        <!-- Edit Options for Members -->
+    <p>
         <p>
-            <strong>Share link:</strong> 
-            <a href="{% url 'meal_plan_detail' meal_plan.shareable_link %}" onclick="copyLink()">
-                {{ meal_plan.shareable_link }}
-            </a>
-            <script>
-                function copyLink() {
-                    const link = "{{ request.build_absolute_uri|slice:':-1' }}";
-                    navigator.clipboard.writeText(link).then(() => {
-                        alert('Link copied to clipboard!');
-                    }, () => {
-                        alert('Failed to copy the link.');
-                    });
-                }
-            </script>
+            <h2>Grocery List</h2>
+            <form method="post" action="{% url 'create_grocery_list' meal_plan.shareable_link %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Create Grocery List</button>
+            </form>
         </p>
         
-    {% endif %}
-    
-    <h2>Recipes</h2>
-    {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes %}
-    
+        <form method="post" action="{% url 'save_grocery_list' meal_plan.shareable_link %}">
+            {% csrf_token %}
+            <div class="form-group">
+            <textarea class="form-control" id="grocery-list" name="grocery_list" rows="10">{{ meal_plan.grocery_list }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Grocery List</button>
+        </form>
+    </p>    
 {% endblock %} 

@@ -15,5 +15,7 @@ urlpatterns = [
     path('meal-plan/<str:shareable_link>/leave/', views.leave_meal_plan, name='leave_meal_plan'),
     path('toggle-meal/<int:meal_id>/', views.toggle_meal_in_meal_plan, name='toggle_meal_in_meal_plan'),
     path('delete-meal/<int:meal_id>/', views.delete_meal, name='delete_meal'),
+    path('meal-plan/<str:shareable_link>/create-grocery-list/', views.create_grocery_list, name='create_grocery_list'),
+    path('meal-plan/<str:shareable_link>/save-grocery-list/', views.save_grocery_list, name='save_grocery_list'),
     # Add other URL patterns as needed
 ] 

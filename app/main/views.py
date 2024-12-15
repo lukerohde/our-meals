@@ -4,7 +4,7 @@ from .models import Collection, Recipe, Meal, Ingredient, MethodStep, MealPlan, 
 from .forms import CollectionForm
 import requests
 from bs4 import BeautifulSoup
-from .ai_helpers import parse_recipe_with_genai
+from .ai_helpers import parse_recipe_with_genai, summarize_grocery_list_with_genai
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from decimal import Decimal, InvalidOperation
@@ -358,3 +358,25 @@ def delete_meal(request, meal_id):
     
     next_url = request.POST.get('next')
     return redirect(next_url)
+
+def create_grocery_list(request, shareable_link):
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    ingredients = gather_ingredients(meal_plan)
+    formatted_list = summarize_grocery_list_with_genai(ingredients)
+    meal_plan.grocery_list = formatted_list
+    meal_plan.save()
+    return redirect('meal_plan_detail', shareable_link=shareable_link)
+
+def save_grocery_list(request, shareable_link):
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    if request.method == 'POST':
+        meal_plan.grocery_list = request.POST.get('grocery_list', '')
+        meal_plan.save()
+    return redirect('meal_plan_detail', shareable_link=meal_plan.shareable_link)
+    
+def gather_ingredients(meal_plan):
+    ingredients = []
+    for meal in meal_plan.meals.all():
+        for recipe in meal.recipes.all():
+            ingredients.extend(recipe.ingredients.all())
+    return ingredients

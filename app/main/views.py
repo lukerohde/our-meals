@@ -275,10 +275,13 @@ def meal_plan_detail(request, shareable_link):
         is_member = Membership.objects.filter(user=request.user, meal_plan=meal_plan).exists()
     else:
         is_member = False
-    
+
+    meal_plan_recipes = meal_plan.meals.values_list('id', flat=True) if meal_plan else []
+
     context = {
         'meal_plan': meal_plan,
         'is_member': is_member,
+        'meal_plan_recipes': meal_plan_recipes
     }
     
     return render(request, 'main/meal_plan_detail.html', context)
@@ -319,10 +322,12 @@ def leave_meal_plan(request, shareable_link):
     
     return redirect('collection_list')
 
+@require_POST
 @login_required
 def toggle_meal_in_meal_plan(request, meal_id):
     """
-    Adds a meal to the user's latest meal plan if it's not already included.
+    Adds or removes a meal from the user's latest meal plan.
+    Redirects back to the originating page.
     """
     meal_plan = latest_meal_plan(request)
 
@@ -340,5 +345,7 @@ def toggle_meal_in_meal_plan(request, meal_id):
         messages.success(request, f"'{meal.title}' has been added to your meal plan.")
     
     meal_plan.save()
-        
-    return redirect('collection_detail', pk=request.GET.get('collection_id'))
+    
+    next_url = request.POST.get('next')
+    return redirect(next_url)
+    

@@ -43,14 +43,6 @@
     {% endif %}
     
     <h2>Recipes</h2>
-    {% for meal in meal_plan.meals.all %}
-        <div>
-            <h3>{{ meal.title }}</h3>
-            <p>{{ meal.description }}</p>
-            <!-- Display ingredients and methods -->
-        </div>
-    {% empty %}
-        <p>No meals in this meal plan.</p>
-    {% endfor %}
+    {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes %}
     
 {% endblock %} 

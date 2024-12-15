@@ -1,0 +1,23 @@
+<ul class="list-group mt-3">
+    {% for meal in meals %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'meal_detail' meal.pk %}">
+            {{ meal.title }}
+            </a>
+            <form method="POST" action="{% url 'toggle_meal_in_meal_plan' meal.id %}?collection_id={{ collection.id }}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button type="submit" class="btn {% if meal.id in meal_plan_recipes %}btn-danger{% else %}btn-success{% endif %}">
+                    <i class="fas fa-shopping-cart"></i>
+                    {% if meal.id in meal_plan_recipes %}
+                        Remove from Meal Plan
+                    {% else %}
+                        Add to Meal Plan
+                    {% endif %}
+                </button>
+            </form>
+        </li>
+    {% empty %}
+        <li class="list-group-item">No meals found.</li>
+    {% endfor %}
+</ul>

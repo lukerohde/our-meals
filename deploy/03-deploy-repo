@@ -32,23 +32,23 @@ fi
 scp ./docker-compose.override.yml.prod $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/docker-compose.override.yml
 
 rm .tmp/http*.conf
+
+# Read the whitelist from DJANGO_PATH_WHITELIST
+DJANGO_ALLOWED_PATHS=$(echo "$DJANGO_ALLOWED_PATHS" | tr ',' '|')  # Convert to regex format for Nginx
 # Generate nginx conf with path whitelisting
-for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
+for A_NAME in $(echo "$DIGITAL_OCEAN_A_RECORDS" | tr ',' ' '); do
     export DOMAIN=$DIGITAL_OCEAN_DOMAIN
     if [ "$A_NAME" != "@" ]; then 
         export DOMAIN="$A_NAME.$DOMAIN"
     fi
 
-    # Read the whitelist from DJANGO_PATH_WHITELIST
-    DJANGO_ALLOWED_PATHS=$(echo $DJANGO_ALLOWED_PATHS | tr ',' '|')  # Convert to regex format for Nginx
-
     echo "Generating nginx files for $DOMAIN with path whitelist $DJANGO_ALLOWED_PATHS"
     sed -e "s/example.com/$DOMAIN/g" \
-        -e "s|DJANGO_ALLOWED_PATHS_PLACEHOLDER|$DJANGO_ALLOWED_PATHS|g" \
+        -e "s/DJANGO_ALLOWED_PATHS/$DJANGO_ALLOWED_PATHS/g" \
         deploy/nginx/http.conf > .tmp/http-$DOMAIN.conf
 
     sed -e "s/example.com/$DOMAIN/g" \
-        -e "s|DJANGO_ALLOWED_PATHS_PLACEHOLDER|$DJANGO_ALLOWED_PATHS|g" \
+        -e "s/DJANGO_ALLOWED_PATHS/$DJANGO_ALLOWED_PATHS/g" \
         deploy/nginx/https.conf > .tmp/https-$DOMAIN.conf
 done
 

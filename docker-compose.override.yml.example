@@ -31,7 +31,7 @@ services:
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
       - ./app/staticfiles:/usr/share/nginx/html/static_root
-      - ./app/src/templates/errors:/usr/share/nginx/html/errors
+      - ./app/templates/errors:/usr/share/nginx/html/errors
       #- ./app/.collectstatic/media_root:/usr/share/nginx/html/media_root
     ports:
       - "80:80"

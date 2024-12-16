@@ -44,11 +44,11 @@ for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
 
     echo "Generating nginx files for $DOMAIN with path whitelist $DJANGO_PATH_WHITELIST"
     sed -e "s/example.com/$DOMAIN/g" \
-        -e "s|DJANGO_PATH_WHITELIST_PLACEHOLDER|$DJANGO_ALLOWED_HOSTS|g" \
+        -e "s|DJANGO_ALLOWED_HOSTS|$DJANGO_ALLOWED_HOSTS|g" \
         deploy/nginx/http.conf > .tmp/http-$DOMAIN.conf
 
     sed -e "s/example.com/$DOMAIN/g" \
-        -e "s|DJANGO_PATH_WHITELIST_PLACEHOLDER|$DJANGO_ALLOWED_HOSTS|g" \
+        -e "s|DJANGO_ALLOWED_HOSTS|$DJANGO_ALLOWED_HOSTS|g" \
         deploy/nginx/https.conf > .tmp/https-$DOMAIN.conf
 done
 

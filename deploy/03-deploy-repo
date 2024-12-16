@@ -40,15 +40,15 @@ for A_NAME in $(echo $DIGITAL_OCEAN_A_RECORDS | tr ',' ' '); do
     fi
 
     # Read the whitelist from DJANGO_PATH_WHITELIST
-    DJANGO_ALLOWED_HOSTS=$(echo $DJANGO_ALLOWED_HOSTS | tr ',' '|')  # Convert to regex format for Nginx
+    DJANGO_ALLOWED_PATHS=$(echo $DJANGO_ALLOWED_PATHS | tr ',' '|')  # Convert to regex format for Nginx
 
-    echo "Generating nginx files for $DOMAIN with path whitelist $DJANGO_PATH_WHITELIST"
+    echo "Generating nginx files for $DOMAIN with path whitelist $DJANGO_ALLOWED_PATHS"
     sed -e "s/example.com/$DOMAIN/g" \
-        -e "s|DJANGO_ALLOWED_HOSTS|$DJANGO_ALLOWED_HOSTS|g" \
+        -e "s|DJANGO_ALLOWED_PATHS_PLACEHOLDER|$DJANGO_ALLOWED_PATHS|g" \
         deploy/nginx/http.conf > .tmp/http-$DOMAIN.conf
 
     sed -e "s/example.com/$DOMAIN/g" \
-        -e "s|DJANGO_ALLOWED_HOSTS|$DJANGO_ALLOWED_HOSTS|g" \
+        -e "s|DJANGO_ALLOWED_PATHS_PLACEHOLDER|$DJANGO_ALLOWED_PATHS|g" \
         deploy/nginx/https.conf > .tmp/https-$DOMAIN.conf
 done
 

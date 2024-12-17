@@ -382,14 +382,3 @@ def gather_ingredients(meal_plan):
         for recipe in meal.recipes.all():
             ingredients.extend(recipe.ingredients.all())
     return ingredients
-
-# def signup(request):
-#     if request.method == 'POST':
-#         form = SignUpForm(request.POST)
-#         if form.is_valid():
-#             user = form.save()
-#             login(request, user)  # Automatically log in the user
-#             return redirect('meal_plan_detail', shareable_link=request.session.get('joining_shareable_link', user.mealplan.shareable_link))
-#     else:
-#         form = SignUpForm()
-#     return render(request, 'registration/signup.html', {'form': form})

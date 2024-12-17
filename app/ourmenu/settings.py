@@ -210,3 +210,5 @@ LOGGING = {
 #         }
 #     }
 # }
+
+ACCOUNT_ADAPTER = 'ourmenu.account_adapter.InviteOnlyAccountAdapter'

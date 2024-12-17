@@ -17,6 +17,5 @@ urlpatterns = [
     path('delete-meal/<int:meal_id>/', views.delete_meal, name='delete_meal'),
     path('meal-plan/<str:shareable_link>/create-grocery-list/', views.create_grocery_list, name='create_grocery_list'),
     path('meal-plan/<str:shareable_link>/save-grocery-list/', views.save_grocery_list, name='save_grocery_list'),
-    # path('signup/', views.signup, name='signup'),
     # Add other URL patterns as needed
 ] 

@@ -1,4 +1,4 @@
-{% extends "account/base_entrance.html" %}
+{% extends "base.html" %}
 {% load i18n %}
 {% load allauth %}
 {% block head_title %}
@@ -9,6 +9,6 @@
         {% trans "Sign Up Closed" %}
     {% endelement %}
     {% element p %}
-        {% trans "We are sorry, but the sign up is currently closed." %}
+        {% trans "Sorry, we're currently in private beta.  You need someone to share their meal plan with you." %}
     {% endelement %}
 {% endblock content %}

@@ -23,8 +23,8 @@ TODO
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)
-    * Invitation only sign up - stop randos joining during rollout 
     * a capture for sign up
+    * DONE Invitation only sign up - stop randos joining during rollout 
     * DONE URL/path whitelisting
 * Improve sign up
     * DONE De-restrict passwords, allowing passphrases
@@ -32,6 +32,7 @@ TODO
     * DONE Sign up when joining a meal plan
     * DONE Fix intermittent 500 on email use
     * Sign up or sign in, as the same page? 
+    * Redirect to meal plan after sign up
 * Improve meal import
     * Handle coles online and www.deliciousmagazine.co.uk 
     * Checkout python recipe-scraper

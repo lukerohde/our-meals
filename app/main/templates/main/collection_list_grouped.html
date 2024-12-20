@@ -1,53 +1,57 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container py-5">
-    {% for owner, data in grouped_collections.items %}
-        <div class="mb-4">
-            <h4 class="mb-3">
-                {{ owner }}
-                {% if data.member_id and meal_plan and meal_plan.owner == user %}
-                    <form method="POST" action="{% url 'main:remove_member' meal_plan.shareable_link data.member_id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-link text-danger p-0 ms-2" style="font-size: 0.8em;" title="Remove from meal plan">
-                            <i class="bi bi-person-x"></i>
-                        </button>
-                    </form>
-                {% endif %}
-            </h4>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {% for collection in data.collections %}
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        {% if collection.photo %}
-                            <img src="{{ collection.photo.url }}" class="card-img-top" alt="{{ collection.title }}" style="height: 200px; object-fit: cover;">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            {% for owner, data in grouped_collections.items %}
+                <div class="mb-4">
+                    <h4 class="mb-3">
+                        {{ owner }}
+                        {% if data.member_id and meal_plan and meal_plan.owner == user %}
+                            <form method="POST" action="{% url 'main:remove_member' meal_plan.shareable_link data.member_id %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-link text-danger p-0 ms-2" style="font-size: 0.8em;" title="Remove from meal plan" onclick="return confirm('Are you sure you want to remove this person from the meal plan?');">
+                                    <i class="bi bi-person-x"></i>
+                                </button>
+                            </form>
                         {% endif %}
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                <a href="{% url 'main:collection_detail' collection.pk %}" class="text-decoration-none" style="color: #b5651d;">
-                                    {{ collection.title }}
-                                </a>
-                            </h5>
-                            {% if collection.description %}
-                                <p class="card-text text-muted">{{ collection.description|truncatewords:30 }}</p>
-                            {% endif %}
+                    </h4>
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for collection in data.collections %}
+                        <div class="col">
+                            <div class="card h-100 shadow-sm">
+                                {% if collection.photo %}
+                                    <img src="{{ collection.photo.url }}" class="card-img-top" alt="{{ collection.title }}" style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a href="{% url 'main:collection_detail' collection.pk %}" class="text-decoration-none" style="color: #b5651d;">
+                                            {{ collection.title }}
+                                        </a>
+                                    </h5>
+                                    {% if collection.description %}
+                                        <p class="card-text text-muted">{{ collection.description|truncatewords:30 }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
+                        {% empty %}
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <i class="bi bi-info-circle me-2"></i>No collections found.
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-info" role="alert">
-                        <i class="bi bi-info-circle me-2"></i>No collections found.
-                    </div>
+            {% endfor %}
+            <div class="row justify-content-between align-items-center mb-4">
+                <div class="col-auto">
+                    <a href="{% url 'main:collection_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Create New Cook Book
+                    </a>
                 </div>
-                {% endfor %}
             </div>
-        </div>
-    {% endfor %}
-    <div class="row justify-content-between align-items-center mb-4">
-        <div class="col-auto">
-            <a href="{% url 'main:collection_create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle me-2"></i>Create New Cook Book
-            </a>
         </div>
     </div>
 </div>

@@ -293,7 +293,7 @@ def meal_plan_detail(request, shareable_link):
             meal_plan.owner == request.user or 
             meal_plan.memberships.filter(user=request.user).exists()
         ),
-        'meal_plan_recipes': [recipe.id for meal in meal_plan.meals.all() for recipe in meal.recipes.all()],
+        'meal_plan_recipes': [meal.id for meal in meal_plan.meals.all()],
         'other_members': other_members,
         'all_members': all_members,
     }

@@ -122,7 +122,7 @@
 
         /* Recipe specific styles */
         .recipe-card {
-            padding: 2rem;
+            padding: 1rem;
             margin-bottom: 2rem;
         }
 
@@ -132,6 +132,12 @@
         }
 
         .ingredients-list {
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .method-steps {
             background-color: rgba(255, 255, 255, 0.5);
             border-radius: 8px;
             padding: 1.5rem;
@@ -210,40 +216,105 @@
                 display: none;
             }
         }
+
+        .navbar-nav {
+            white-space: nowrap;
+        }
+
+        .navbar-nav .nav-item {
+            flex: 0 0 auto;
+        }
+
+        .navbar-nav .nav-link {
+            padding: 0.5rem 1rem;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-light sticky-top">
+    <nav class="navbar navbar-expand-md navbar-light sticky-top">
         <div class="container-fluid px-4">
-            <a class="navbar-brand" href="{% url 'main:collection_list' %}">OurMeals.Online</a>
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <a class="navbar-brand" href="{% url 'main:collection_list' %}">OurMeals.Online</a>
+                
+                <!-- Hamburger button -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent" aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             
-            <!-- Navigation Pills -->
-            <div class="nav nav-pills">
-                {% if user.is_authenticated and latest_meal_plan %}
+            {% if user.is_authenticated %}
+            <!-- Mobile Pills - Outside collapse -->
+            <div class="d-md-none w-100">
+                <div class="nav nav-pills d-flex justify-content-center gap-3 py-2">
                     <a class="nav-link {% if request.resolver_match.url_name == 'collection_list' %}active{% endif %}" 
                        href="{% url 'main:collection_list' %}">
-                        <i class="bi bi-collection"></i>
+                        <i class="bi bi-collection me-1"></i>
                         <span>Cook Books</span>
                     </a>
                     
+                    {% if latest_meal_plan %}
                     <a class="nav-link {% if request.resolver_match.url_name == 'meal_plan_detail' %}active{% endif %}"
                        href="{% url 'main:meal_plan_detail' latest_meal_plan.shareable_link %}">
-                        <i class="bi bi-calendar3"></i>
+                        <i class="bi bi-calendar3 me-1"></i>
                         <span>Meal Plan</span>
                     </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Collapsible content -->
+            <div class="collapse navbar-collapse" id="navbarContent">
+                {% if user.is_authenticated %}
+                <!-- Desktop Nav -->
+                <ul class="navbar-nav d-none d-md-flex ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'collection_list' %}active{% endif %}" 
+                           href="{% url 'main:collection_list' %}">
+                            <i class="bi bi-collection me-1"></i>
+                            <span>Cook Books</span>
+                        </a>
+                    </li>
                     
-                    <a class="nav-link" href="{% url 'account_logout' %}">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Logout</span>
-                    </a>
-                {% else %}
-                    <a class="nav-link" href="{% url 'account_login' %}">
-                        <i class="bi bi-box-arrow-in-right"></i>
-                        <span>Login</span>
-                    </a>
+                    {% if latest_meal_plan %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'meal_plan_detail' %}active{% endif %}"
+                           href="{% url 'main:meal_plan_detail' latest_meal_plan.shareable_link %}">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            <span>Meal Plan</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'account_logout' %}">
+                            <i class="bi bi-box-arrow-right me-1"></i>
+                            <span>Logout</span>
+                        </a>
+                    </li>
+                </ul>
                 {% endif %}
+
+                <!-- Mobile Auth buttons -->
+                <div class="d-md-none">
+                    {% if user.is_authenticated %}
+                    <div class="text-center">
+                        <a href="{% url 'account_logout' %}" class="nav-link">
+                            <i class="bi bi-box-arrow-right me-1"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center">
+                        <a href="{% url 'account_login' %}" class="nav-link">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>
+                            <span>Login</span>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
@@ -253,7 +324,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
                 {% if request.resolver_match.url_name == 'collection_list' %}
-                    <li class="breadcrumb-item active"Cook Books</li>
+                    <li class="breadcrumb-item active">Cook Books</li>
                 {% else %}
                     <li class="breadcrumb-item"><a href="{% url 'main:collection_list' %}">Cook Books</a></li>
                     {% if request.resolver_match.url_name == 'collection_detail' %}

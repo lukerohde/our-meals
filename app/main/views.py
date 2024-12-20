@@ -286,13 +286,14 @@ def meal_plan_detail(request, shareable_link):
     other_members = meal_plan.memberships.exclude(user=meal_plan.owner)
     all_members = [m.user for m in meal_plan.memberships.all()]
     
+
     context = {
         'meal_plan': meal_plan,
         'is_member': request.user.is_authenticated and (
             meal_plan.owner == request.user or 
             meal_plan.memberships.filter(user=request.user).exists()
         ),
-        'meal_plan_recipes': [recipe for meal in meal_plan.meals.all() for recipe in meal.recipes.all()],
+        'meal_plan_recipes': [recipe.id for meal in meal_plan.meals.all() for recipe in meal.recipes.all()],
         'other_members': other_members,
         'all_members': all_members,
     }

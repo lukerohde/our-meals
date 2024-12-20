@@ -43,6 +43,7 @@
       font-size: 1.1rem;
     }
   }
+
 </style>
 
 <div class="container-fluid px-4">
@@ -56,11 +57,11 @@
 
     <!-- Action Buttons -->
     <div class="btn-group mb-4" role="group" aria-label="Actions">
-      <a href="{% url 'main:collection_detail' meal.collection.pk %}" class="btn btn-secondary me-2">
+      <a href="{% url 'main:collection_detail' meal.collection.pk %}" class="btn btn-primary me-2 shadow-sm rounded-pill">
         <i class="bi bi-arrow-left me-2"></i>Back
       </a>
       {% if meal.url %}
-        <a href="{{ meal.url }}" target="_blank" class="btn btn-outline-secondary me-2">
+        <a href="{{ meal.url }}" target="_blank" class="btn btn-outline-primary me-2 shadow-sm rounded-pill">
           <i class="bi bi-link-45deg"></i> Original Recipe
         </a>
       {% endif %}
@@ -68,7 +69,7 @@
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">
         <button type="submit" 
-                class="btn btn-outline-secondary me-2 {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-outline-success{% endif %}"
+                class="btn {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-outline-success{% endif %} me-2 shadow-sm rounded-pill"
                 title="{% if meal.id in meal_plan_recipes %}Remove from Meal Plan{% else %}Add to Meal Plan{% endif %}">
           {% if meal.id in meal_plan_recipes %}
             <i class="bi bi-check-circle-fill"></i> In Meal Plan

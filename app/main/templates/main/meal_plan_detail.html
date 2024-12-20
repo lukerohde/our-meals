@@ -21,15 +21,6 @@
                             · Members: 
                             {% for member in other_members %}
                                 {{ member.user.username }}
-                                {% if user == meal_plan.owner %}
-                                    <form method="POST" action="{% url 'main:remove_member' meal_plan.shareable_link member.user.id %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-link text-danger p-0 ms-1" style="font-size: 0.8em;">
-                                            <i class="bi bi-person-x"></i>
-                                        </button>
-                                    </form>
-                                {% endif %}
-                                {% if not forloop.last %}, {% endif %}
                             {% endfor %}
                         {% endif %}
                     </p>

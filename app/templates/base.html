@@ -143,6 +143,16 @@
             padding: 1.5rem;
         }
 
+        @media (max-width: 767.98px) {
+            .ingredients-list {
+                padding: 0;
+            }
+
+            .method-steps {
+                padding: 0;
+            }
+        }
+
         .method-steps li {
             margin-bottom: 1rem;
             padding-left: 1rem;
@@ -318,27 +328,6 @@
             </div>
         </div>
     </nav>
-
-    <!-- Breadcrumb Navigation - Hidden on Mobile -->
-    <div class="container-fluid px-4 py-2 breadcrumb-nav">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                {% if request.resolver_match.url_name == 'collection_list' %}
-                    <li class="breadcrumb-item active">Cook Books</li>
-                {% else %}
-                    <li class="breadcrumb-item"><a href="{% url 'main:collection_list' %}">Cook Books</a></li>
-                    {% if request.resolver_match.url_name == 'collection_detail' %}
-                        <li class="breadcrumb-item active">{{ collection.title }}</li>
-                    {% elif request.resolver_match.url_name == 'meal_detail' %}
-                        <li class="breadcrumb-item"><a href="{% url 'main:collection_detail' meal.collection.pk %}">{{ meal.collection.title }}</a></li>
-                        <li class="breadcrumb-item active">{{ meal.title }}</li>
-                    {% elif request.resolver_match.url_name == 'meal_plan_detail' %}
-                        <li class="breadcrumb-item active">Meal Plan</li>
-                    {% endif %}
-                {% endif %}
-            </ol>
-        </nav>
-    </div>
 
     <!-- Main Content -->
     <div class="container py-4">

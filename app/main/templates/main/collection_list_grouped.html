@@ -1,12 +1,21 @@
 {% extends "base.html" %}
-
 {% block content %}
 <div class="container py-5">
-    {% for owner, collections in grouped_collections.items %}
+    {% for owner, data in grouped_collections.items %}
         <div class="mb-4">
-            <h4 class="mb-3">{{ owner }}</h4>
+            <h4 class="mb-3">
+                {{ owner }}
+                {% if data.member_id and meal_plan and meal_plan.owner == user %}
+                    <form method="POST" action="{% url 'main:remove_member' meal_plan.shareable_link data.member_id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-link text-danger p-0 ms-2" style="font-size: 0.8em;" title="Remove from meal plan">
+                            <i class="bi bi-person-x"></i>
+                        </button>
+                    </form>
+                {% endif %}
+            </h4>
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {% for collection in collections %}
+                {% for collection in data.collections %}
                 <div class="col">
                     <div class="card h-100 shadow-sm">
                         {% if collection.photo %}

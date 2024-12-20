@@ -27,4 +27,4 @@ def join_meal_plan_on_login(sender, request, user, **kwargs):
         if meal_plan and not Membership.objects.filter(user=user, meal_plan=meal_plan).exists():
             Membership.objects.create(user=user, meal_plan=meal_plan)
             messages.success(request, f"You have successfully joined the meal plan '{meal_plan.name}'.")
-            return redirect('meal_plan_detail', shareable_link=shareable_link) 
+            return redirect('main:meal_plan_detail', shareable_link=shareable_link) 

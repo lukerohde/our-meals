@@ -28,6 +28,20 @@
           {% endif %}
 
           <div class="form-floating mb-3">
+            <input type="text" name="{{ form.username.name }}" class="form-control {% if form.username.errors %}is-invalid{% endif %}"
+                   id="{{ form.username.id_for_label }}" placeholder="Username"
+                   autocomplete="username" required>
+            <label for="{{ form.username.id_for_label }}">{% trans "Username" %}</label>
+            {% if form.username.errors %}
+              <div class="invalid-feedback">
+                {% for error in form.username.errors %}
+                  {{ error }}
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <div class="form-floating mb-3">
             <input type="email" name="{{ form.email.name }}" class="form-control {% if form.email.errors %}is-invalid{% endif %}"
                    id="{{ form.email.id_for_label }}" placeholder="Email address"
                    autocomplete="email" required>

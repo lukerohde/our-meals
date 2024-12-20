@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from .models import Collection, Recipe, Meal, Ingredient, MethodStep, MealPlan, Membership
 from .forms import CollectionForm
 import requests
@@ -18,6 +19,9 @@ from django.urls import reverse
 # Configure logger
 logger = logging.getLogger(__name__)
 
+def get_possessive_name(name):
+    """Returns the possessive form of a name, handling 's' endings correctly."""
+    return f"{name}'" if name.endswith('s') else f"{name}'s"
 
 # @login_required
 # def collection_list(request):
@@ -31,31 +35,40 @@ def latest_meal_plan(request):
 
 @login_required
 def collection_list(request):
-    # import ipdb; ipdb.set_trace()
-    # collections = Collection.objects.filter(user=request.user)
-    # return render(request, 'main/collection_list.html', {'collections': collections})
-
-    if latest_meal_plan(request):
+    meal_plan = latest_meal_plan(request)
+    
+    if meal_plan:
         # Get members of the latest meal plan excluding the current user
-        members = Membership.objects.filter(meal_plan=latest_meal_plan(request)).exclude(user=request.user).select_related('user')
+        members = Membership.objects.filter(meal_plan=meal_plan).exclude(user=request.user).select_related('user')
         
         # Get collections of all members
         member_collections = Collection.objects.filter(user__in=[membership.user for membership in members])
     else:
+        members = []
         member_collections = Collection.objects.none()
     
-    # Group collections by owner
+    # Group collections by owner with additional member info
     grouped_collections = {}
     
     # Add user's own collections first
-    grouped_collections['Your Cook Books'] = Collection.objects.filter(user=request.user)
+    grouped_collections['Your Cook Books'] = {
+        'collections': Collection.objects.filter(user=request.user),
+        'member_id': None
+    }
     
     # Add collections from meal plan members
     for membership in members:
-        grouped_collections[membership.user.username] = Collection.objects.filter(user=membership.user)
+        grouped_collections[f"{get_possessive_name(membership.user.username.title())} Cook Books"] = {
+            'collections': Collection.objects.filter(user=membership.user),
+            'member_id': membership.user.id
+        }
     
-    result = render(request, 'main/collection_list_grouped.html', {'grouped_collections': grouped_collections})
-    return result
+    context = {
+        'grouped_collections': grouped_collections,
+        'meal_plan': meal_plan,
+    }
+    
+    return render(request, 'main/collection_list_grouped.html', context)
 
 @login_required
 def collection_create(request):
@@ -269,24 +282,20 @@ def meal_plan_detail(request, shareable_link):
     """
     meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
     
-    # Check if user is authenticated and is a member
-    if request.user.is_authenticated:
-        is_member = Membership.objects.filter(user=request.user, meal_plan=meal_plan).exists()
-    else:
-        is_member = False
-
-    meal_plan_recipes = meal_plan.meals.values_list('id', flat=True) if meal_plan else []
-
+    # Get all members except the owner
+    other_members = meal_plan.memberships.exclude(user=meal_plan.owner)
+    all_members = [m.user for m in meal_plan.memberships.all()]
+    
     context = {
         'meal_plan': meal_plan,
-        'is_member': is_member,
-        'meal_plan_recipes': meal_plan_recipes
+        'is_member': request.user.is_authenticated and (
+            meal_plan.owner == request.user or 
+            meal_plan.memberships.filter(user=request.user).exists()
+        ),
+        'meal_plan_recipes': [recipe for meal in meal_plan.meals.all() for recipe in meal.recipes.all()],
+        'other_members': other_members,
+        'all_members': all_members,
     }
-    
-    # Convert None to empty string for grocery list instruction
-    if meal_plan.grocery_list_instruction is None:
-        meal_plan.grocery_list_instruction = ''
-        meal_plan.save()
     
     return render(request, 'main/meal_plan_detail.html', context)
 
@@ -409,3 +418,14 @@ def meal_plan_edit(request, shareable_link):
             messages.error(request, 'Please provide a name for your meal plan.')
     
     return render(request, 'main/meal_plan_form.html', {'meal_plan': meal_plan})
+
+@login_required
+def remove_member(request, shareable_link, member_id):
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    if request.user != meal_plan.owner:
+        return HttpResponseForbidden("Only the meal plan owner can remove members")
+    
+    member = get_object_or_404(User, id=member_id)
+    Membership.objects.filter(user=member, meal_plan=meal_plan).delete()
+    messages.success(request, f"Removed {member.username} from your meal plan")
+    return redirect('main:collection_list')

@@ -64,6 +64,7 @@ def parse_recipe_with_genai(raw_text):
     client = OpenAI(
         api_key=os.getenv('OPENAI_API_KEY')
     )
+
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[

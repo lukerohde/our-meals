@@ -2,15 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>404 Not Found</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - OurMeals.Online</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #b5651d;
+            --background-color: #f8f0e3;
+            --text-color: #2c1810;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', system-ui, -apple-system, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            line-height: 1.6;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+        }
+
+        .error-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 3px solid var(--primary-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background-color: #8b4513;
+            border-color: #8b4513;
+        }
+    </style>
 </head>
-<body style="background-color: #f8f0e3; font-family: 'Courier New', Courier, monospace; text-align: center; padding: 50px;">
-    <h1 style="color: #b5651d; font-size: 3rem;">404 Not Found</h1>
-    <p style="color: #6c757d; font-size: 1.5rem;">The page you’re looking for could not be found.</p>
-    <img src="/errors/404.jpg" alt="404 Not Found" style="max-width: 500px; margin-top: 30px; border: 3px solid #b5651d;">
-    <div style="margin-top: 30px;">
-        <a href="/" style="color: #ffbf00; text-decoration: none; font-weight: bold; font-size: 1.2rem;">Return to Home</a>
+<body>
+    <div class="container text-center py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <img src="/errors/404.jpg" alt="404 Error" class="error-image mb-4">
+                <h1 class="display-4 mb-3">Oops! Recipe Not Found</h1>
+                <p class="lead mb-4">We couldn't find the page you're looking for. It seems this recipe has gone missing from our cook book!</p>
+                <a href="/" class="btn btn-primary">
+                    <i class="bi bi-house-door me-2"></i>Return to Home
+                </a>
+            </div>
+        </div>
     </div>
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

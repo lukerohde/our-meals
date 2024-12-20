@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h1 class="h2 mb-4 text-center" style="font-family: 'Playfair Display', serif; color: #b5651d;">
+                        {% if meal_plan %}Edit{% else %}Create New{% endif %} Meal Plan
+                    </h1>
+                    
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="name" 
+                                name="name" 
+                                value="{{ meal_plan.name|default:'' }}"
+                                required
+                                placeholder="e.g., Weekly Family Meals"
+                            >
+                            <div class="invalid-feedback">
+                                Please provide a name for your meal plan.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>{% if meal_plan %}Save Changes{% else %}Create Meal Plan{% endif %}
+                            </button>
+                            <a href="{% if meal_plan %}{% url 'main:meal_plan_detail' meal_plan.shareable_link %}{% else %}{% url 'main:collection_list' %}{% endif %}" class="btn btn-outline-primary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

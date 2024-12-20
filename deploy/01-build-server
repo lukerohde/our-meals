@@ -68,25 +68,6 @@ create_firewall(){
   export FIREWALL_ID=$(doctl compute firewall list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
 }
 
-create_reserved_ip() {
-  echo "Creating a reserved IP"
-  doctl compute reserved-ip create --droplet-id $DROPLET_ID
-}
-
-get_reserved_ip(){
-  # TODO RESERVED_IP = ASSIGNED IP, but if no ASSIGNED IP then check for an unused RESERVED IP (that was previously allocated)
-  # Can we use DNS root records to inform us of the previously reserved ip, and use that?
-  # Update clean up script to give the option to relinquish a reserved IP, and associated DNS records
-  export RESERVED_IP=$(doctl compute reserved-ip list --format IP --no-header | awk '{print $1}')
-  export ASSIGNED_IP=$(doctl compute reserved-ip list --format DropletName,IP --no-header | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
-}
-
-
-assign_ip(){
-  echo "Assigning Reserved IP $RESERVED_IP"
-  doctl compute reserved-ip-action assign $RESERVED_IP $DROPLET_ID
-}
-
 update_domains() {
   DOMAINS=${DOMAINS:-""}
 
@@ -120,7 +101,6 @@ update_domains() {
   done
 }
 
-
 get_key_id
 if [[ -z "$KEY_ID" ]]; then
   import_key
@@ -139,16 +119,54 @@ fi
 export DROPLET_ID=$(doctl compute droplet list --format Name,ID | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
 export DROPLET_IP=$(doctl compute droplet list --format Name,PublicIPv4 | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
 
-get_reserved_ip
-if [[ -z "$RESERVED_IP" ]]; then 
+create_reserved_ip() {
+  echo "Creating a reserved IP"
+  doctl compute reserved-ip create --droplet-id $DROPLET_ID
+}
+
+get_public_ips(){
+  # TODO RESERVED_IP = ASSIGNED IP, but if no ASSIGNED IP then check for an unused RESERVED IP (that was previously allocated)
+  # Can we use DNS root records to inform us of the previously reserved ip, and use that?
+  # Update clean up script to give the option to relinquish a reserved IP, and associated DNS records
+  #export RESERVED_IP=$(doctl compute reserved-ip list --format IP --no-header | awk '{print $1}')
+  export AVAILABLE_RESERVED_IP=$(doctl compute reserved-ip list --format IP,Droplet\ Name | grep -v Droplet\ Name | awk '$2 == "" {print $1}')
+  export ASSIGNED_RESERVED_IP=$(doctl compute reserved-ip list --format DropletName,IP --no-header | grep "$DIGITAL_OCEAN_SERVER_NAME" | awk '{print $2}')
+}
+
+assign_ip(){
+  echo "Assigning Reserved IP $AVAILABLE_RESERVED_IP"
+  doctl compute reserved-ip-action assign $AVAILABLE_RESERVED_IP $DROPLET_ID
+}
+
+get_public_ips
+if [[ -z "$AVAILABLE_RESERVED_IP" && -z "$ASSIGNED_RESERVED_IP" ]]; then 
   create_reserved_ip
-  get_reserved_ip
-elif [[ -z "$ASSIGNED_IP" ]]; then 
-  assign_ip
-  get_reserved_ip
-else 
-  echo Droplet already assigned $ASSIGNED_IP - it should match $RESERVED_IP
+  get_public_ips
 fi 
+
+if [[ -z "$ASSIGNED_RESERVED_IP" ]]; then 
+  assign_ip
+  get_public_ips
+fi
+
+# if reserved ip is changing from what was on file then raise a warning
+RESERVED_IP=$(awk -F '=' '/^RESERVED_IP=/ {print $2}' .digital_ocean_env)
+if [[ -n "$AVAILABLE_RESERVED_IP" && "$RESERVED_IP" != "$ASSIGNED_RESERVED_IP" ]]; then
+  echo "Reserved IP has changed from $RESERVED_IP to $ASSIGNED_RESERVED_IP"
+  # give the user a chance to stop this
+  read -p "Do you want to continue? (y/n): " answer
+  if [[ $answer != "y" ]]; then
+    echo "Exiting..."
+    exit 1
+  fi
+fi
+
+if [[ -z "$ASSIGNED_RESERVED_IP" ]]; then 
+  echo "Droplet has not been assigned a reserved IP yet. It should be $AVAILABLE_RESERVED_IP"
+  exit 1
+else
+  export RESERVED_IP=$ASSIGNED_RESERVED_IP
+fi
 
 update_domains
 

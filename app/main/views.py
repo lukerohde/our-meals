@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 import logging
 from collections import defaultdict
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 # from django.contrib.auth import login
 
@@ -48,7 +48,7 @@ def collection_list(request):
     grouped_collections = {}
     
     # Add user's own collections first
-    grouped_collections['You'] = Collection.objects.filter(user=request.user)
+    grouped_collections['Your Cook Books'] = Collection.objects.filter(user=request.user)
     
     # Add collections from meal plan members
     for membership in members:
@@ -65,7 +65,7 @@ def collection_create(request):
             collection = form.save(commit=False)
             collection.user = request.user
             collection.save()
-            return redirect('collection_list')
+            return redirect('main:collection_list')
     else:
         form = CollectionForm()
     return render(request, 'main/collection_form.html', {'form': form})
@@ -95,7 +95,7 @@ def scrape_recipe(request):
     except requests.RequestException as e:
         logger.error(f"Failed to fetch the recipe URL: {recipe_url}. Error: {e}")
         messages.error(request, f"Failed to fetch the recipe URL: {e}")
-        return redirect('collection_detail', pk=collection.id)
+        return redirect('main:collection_detail', pk=collection.id)
     
     # Parse the page content
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -103,11 +103,10 @@ def scrape_recipe(request):
     
     # Parse the raw text into structured data using GenAI
     structured_data = parse_recipe_with_genai(raw_text)
-    # import pdb; pdb.set_trace()
     if not structured_data:
         logger.error(f"Failed to parse the recipe from URL: {recipe_url}")
         messages.error(request, "Failed to parse the recipe. Please try again.")
-        return redirect('collection_detail', pk=collection.id)
+        return redirect('main:collection_detail', pk=collection.id)
     
     try:
         # Extract Meal information
@@ -190,14 +189,14 @@ def scrape_recipe(request):
                 
                 logger.info(f"Added MethodStep to Recipe ID: {recipe.id}: {step.strip()}")
         
-        messages.success(request, "Recipe scraped and added successfully!")
+        messages.success(request, "Recipe scraped and added to your Cook Book!")
         logger.info(f"Successfully scraped and saved recipe from URL: {recipe_url} for Collection ID: {collection.id}")
     except Exception as e:
         logger.exception(f"An error occurred while saving the recipe from URL: {recipe_url}. Error: {e}")
         messages.error(request, f"An error occurred while saving the recipe: {e}")
-        return redirect('collection_detail', pk=collection.id)
+        return redirect('main:collection_detail', pk=collection.id)
     
-    return redirect('meal_detail', pk=meal.id)
+    return redirect('main:meal_detail', pk=meal.id)
 
 
 @require_POST
@@ -252,9 +251,14 @@ def meal_detail(request, pk):
     meal = get_object_or_404(Meal, pk=pk)
     recipes = meal.recipes.all()
     
+    # Get meal plan info
+    meal_plan = latest_meal_plan(request)
+    meal_plan_recipes = meal_plan.meals.values_list('id', flat=True) if meal_plan else []
+    
     context = {
         'meal': meal,
         'recipes': recipes,
+        'meal_plan_recipes': meal_plan_recipes,
     }
     
     return render(request, 'main/meal_detail.html', context)
@@ -279,6 +283,11 @@ def meal_plan_detail(request, shareable_link):
         'meal_plan_recipes': meal_plan_recipes
     }
     
+    # Convert None to empty string for grocery list instruction
+    if meal_plan.grocery_list_instruction is None:
+        meal_plan.grocery_list_instruction = ''
+        meal_plan.save()
+    
     return render(request, 'main/meal_plan_detail.html', context)
 
 def join_meal_plan(request, shareable_link):
@@ -288,11 +297,11 @@ def join_meal_plan(request, shareable_link):
         
         if Membership.objects.filter(user=request.user, meal_plan=meal_plan).exists():
             messages.error(request, "You are already a member of this meal plan.")
-            return redirect('meal_plan_detail', shareable_link=shareable_link)
+            return redirect('main:meal_plan_detail', shareable_link=shareable_link)
         
         Membership.objects.create(user=request.user, meal_plan=meal_plan)
         messages.success(request, f"You have successfully joined the meal plan '{meal_plan.name}'.")
-        return redirect('meal_plan_detail', shareable_link=shareable_link)
+        return redirect('main:meal_plan_detail', shareable_link=shareable_link)
     else:
         # Handle unauthenticated users
         request.session['joining_shareable_link'] = shareable_link
@@ -307,7 +316,7 @@ def leave_meal_plan(request, shareable_link):
     meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
     if request.user == meal_plan.owner:
         messages.error(request, "Owners cannot leave their own meal plan.")
-        return redirect('meal_plan_detail', shareable_link=shareable_link)
+        return redirect('main:meal_plan_detail', shareable_link=shareable_link)
     
     membership = Membership.objects.filter(user=request.user, meal_plan=meal_plan).first()
     if membership:
@@ -316,7 +325,7 @@ def leave_meal_plan(request, shareable_link):
     else:
         messages.error(request, "You are not a member of this meal plan.")
     
-    return redirect('collection_list')
+    return redirect('main:collection_list')
 
 @require_POST
 @login_required
@@ -329,7 +338,7 @@ def toggle_meal_in_meal_plan(request, meal_id):
 
     if not meal_plan:
         messages.error(request, "No active meal plan found.")
-        return redirect('collection_detail', pk=request.GET.get('collection_id'))
+        return redirect('main:collection_detail', pk=request.GET.get('collection_id'))
 
     meal = get_object_or_404(Meal, id=meal_id)
     
@@ -343,42 +352,60 @@ def toggle_meal_in_meal_plan(request, meal_id):
     meal_plan.save()
     
     next_url = request.POST.get('next')
-    return redirect(next_url)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('main:collection_list')))
 
 @require_POST
 @login_required
 def delete_meal(request, meal_id):
-    if request.method == 'POST':
-        meal = get_object_or_404(Meal, id=meal_id)
-        meal.delete()
-    
-    next_url = request.POST.get('next')
-    return redirect(next_url)
+    meal = get_object_or_404(Meal, id=meal_id)
+    collection = meal.collection
+    meal.delete()
+    return redirect('main:collection_detail', pk=collection.id)
 
 @require_POST
 @login_required
 def create_grocery_list(request, shareable_link):
     meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
     ingredients = gather_ingredients(meal_plan)
-    grocery_list_instruction = request.POST.get('grocery_list_instruction', '')
+    grocery_list_instruction = request.POST.get('grocery_list_instruction', '') or ''
     formatted_list = summarize_grocery_list_with_genai(ingredients, grocery_list_instruction)
     meal_plan.grocery_list = formatted_list
     meal_plan.grocery_list_instruction = grocery_list_instruction
     meal_plan.save()
-    return redirect('meal_plan_detail', shareable_link=shareable_link)
+    return redirect('main:meal_plan_detail', shareable_link=shareable_link)
 
 @require_POST
 @login_required
 def save_grocery_list(request, shareable_link):
     meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
-    if request.method == 'POST':
-        meal_plan.grocery_list = request.POST.get('grocery_list', '')
-        meal_plan.save()
-    return redirect('meal_plan_detail', shareable_link=meal_plan.shareable_link)
-    
+    meal_plan.grocery_list = request.POST.get('grocery_list', '')
+    meal_plan.save()
+    return JsonResponse({'status': 'success'})
+
 def gather_ingredients(meal_plan):
     ingredients = []
     for meal in meal_plan.meals.all():
         for recipe in meal.recipes.all():
             ingredients.extend(recipe.ingredients.all())
     return ingredients
+
+@login_required
+def meal_plan_edit(request, shareable_link):
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    
+    # Only the owner can edit the meal plan
+    if request.user != meal_plan.owner:
+        messages.error(request, "You don't have permission to edit this meal plan.")
+        return redirect('main:meal_plan_detail', shareable_link=shareable_link)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        if name:
+            meal_plan.name = name
+            meal_plan.save()
+            messages.success(request, 'Meal plan updated successfully!')
+            return redirect('main:meal_plan_detail', shareable_link=shareable_link)
+        else:
+            messages.error(request, 'Please provide a name for your meal plan.')
+    
+    return render(request, 'main/meal_plan_form.html', {'meal_plan': meal_plan})

@@ -1,80 +1,189 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <p>
-        <h1>{{ meal_plan.name }}</h1>
-        <p><strong>Owner:</strong> {{ meal_plan.owner.username }}</p>
-        
-        {% if is_member %}
-            <!-- Leave Meal Plan Button -->
-            {% if user != meal_plan.owner %}
-                <form action="{% url 'leave_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Leave Meal Plan</button>
-                </form>
-            {% endif %}
-        {% else %}
-            <!-- Join Meal Plan Button -->
-            <form action="{% url 'join_meal_plan' meal_plan.shareable_link %}" method="POST" style="display:inline;">
-                {% csrf_token %}
-                <input type="hidden" name="meal_plan_shareable_link" value="{{ meal_plan.shareable_link }}">
-                <button type="submit" class="btn btn-success">Join Meal Plan</button>
-                <small>This will become your default meal plan until you leave</small>
-            </form>
-        {% endif %}
-        
-        {% if is_member %}
-            <!-- Edit Options for Members -->
-            <p>
-                <strong>Share link:</strong> 
-                <a href="{% url 'meal_plan_detail' meal_plan.shareable_link %}" onclick="copyLink()">
-                    {{ meal_plan.shareable_link }}
-                </a>
-                <script>
-                    function copyLink() {
-                        const link = "{{ request.build_absolute_uri|slice:':-1' }}";
-                        navigator.clipboard.writeText(link).then(() => {
-                            alert('Link copied to clipboard!');
-                        }, () => {
-                            alert('Failed to copy the link.');
-                        });
-                    }
-                </script>
-            </p>
+<div class="container py-4">
+    <!-- Header Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1 class="mb-2" style="text-transform: capitalize;">{{ meal_plan.name }}</h1>
+                    <p class="text-muted mb-0">
+                        Created by {{ meal_plan.owner.username }}
+                        {% if user == meal_plan.owner %}
+                        · <a href="{% url 'main:meal_plan_edit' meal_plan.shareable_link %}" class="text-primary">
+                            <i class="bi bi-pencil-square"></i> Edit Plan
+                        </a>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="text-end">
+                    {% if is_member %}
+                        {% if user != meal_plan.owner %}
+                            <form action="{% url 'main:leave_meal_plan' meal_plan.shareable_link %}" method="POST" class="d-inline-block">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Leave Plan
+                                </button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <form action="{% url 'main:join_meal_plan' meal_plan.shareable_link %}" method="POST" class="d-inline-block">
+                            {% csrf_token %}
+                            <input type="hidden" name="meal_plan_shareable_link" value="{{ meal_plan.shareable_link }}">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Join Plan
+                            </button>
+                        </form>
+                        <div class="text-muted small mt-2">This will become your default meal plan</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if is_member %}
+        <!-- Share Section -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-people-fill text-primary me-3 fs-4"></i>
+                            <div>
+                                <h6 class="mb-1">Invite Others</h6>
+                                <p class="text-muted mb-0 small">Share this link with friends and family</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="copyLink()">
+                            <i class="bi bi-clipboard me-2"></i>Copy Invitation Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Recipes Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">Planned Meals</h2>
+            {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=is_member %}
+        </div>
+    </div>
+
+    <!-- Grocery List Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">Grocery List</h2>
             
-        {% endif %}
-    </p>
-    <p>
-        <h2>Recipes</h2>
-        {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=is_member %}
-    </p>
-    
-    <p>
-        
-        <p>
-            <h2>Grocery List</h2>
             {% if is_member %}
-                <label for="grocery-list-instruction">Grocery List AI Instructions:</label>
-                <form method="post" action="{% url 'create_grocery_list' meal_plan.shareable_link %}">
-                    {% csrf_token %}
-                    <div class="form-group">
-                    <textarea class="form-control" id="grocery-list-instruction" name="grocery_list_instruction" rows="3" placeholder="e.g., Separate items for the Asian grocer, add non-food items.">{{ meal_plan.grocery_list_instruction }}</textarea>
+                <!-- AI Instructions -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form method="post" action="{% url 'main:create_grocery_list' meal_plan.shareable_link %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="grocery-list-instruction" class="form-label">
+                                    <i class="bi bi-magic me-2"></i>Grocery List AI Instructions
+                                </label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="grocery-list-instruction" 
+                                    name="grocery_list_instruction" 
+                                    rows="3" 
+                                    placeholder="e.g., Separate items for the Asian grocer, add non-food items."
+                                >{{ meal_plan.grocery_list_instruction|default_if_none:"" }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-stars me-2"></i>Generate List with AI
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-secondary">Create Grocery List</button>
-            </form>
+
+                <!-- Editable List -->
+                <div class="form-group mb-3">
+                    <textarea 
+                        id="grocery_list" 
+                        class="form-control" 
+                        rows="20" 
+                        style="font-family: monospace;"
+                    >{{ meal_plan.grocery_list }}</textarea>
+                </div>
+                <div id="save-status" class="text-muted small"></div>
+            {% else %}
+                <pre class="bg-light p-4 rounded">{{ meal_plan.grocery_list }}</pre>
             {% endif %}
-        </p>
-        
-        {% if is_member %}
-            <form method="POST">
-                {% csrf_token %}
-                <div class="form-group">
-                    <textarea name="grocery_list" class="form-control" rows="30">{{ meal_plan.grocery_list }}</textarea>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyLink() {
+        const link = "{{ request.build_absolute_uri }}";
+        navigator.clipboard.writeText(link).then(() => {
+            // Create a toast notification
+            const toast = document.createElement('div');
+            toast.className = 'position-fixed bottom-0 end-0 p-3';
+            toast.style.zIndex = '11';
+            toast.innerHTML = `
+                <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="bi bi-check-circle me-2"></i>Link copied to clipboard!
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Update Grocery List</button>
-            </form>
-        {% else %}
-            <pre>{{ meal_plan.grocery_list }}</pre>
-        {% endif %}
-    </p>    
-{% endblock %} 
+            `;
+            document.body.appendChild(toast);
+            const toastEl = new bootstrap.Toast(toast.querySelector('.toast'));
+            toastEl.show();
+            
+            // Remove the toast after it's hidden
+            toast.addEventListener('hidden.bs.toast', () => {
+                document.body.removeChild(toast);
+            });
+        });
+    }
+
+    // Auto-save functionality
+    let saveTimeout;
+    const groceryList = document.getElementById('grocery_list');
+    const saveStatus = document.getElementById('save-status');
+    
+    if (groceryList) {
+        groceryList.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            saveStatus.textContent = 'Saving...';
+            
+            saveTimeout = setTimeout(() => {
+                const data = new FormData();
+                data.append('grocery_list', groceryList.value);
+                
+                fetch('{% url "main:save_grocery_list" meal_plan.shareable_link %}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: data
+                })
+                .then(response => {
+                    if (response.ok) {
+                        saveStatus.textContent = 'Changes saved';
+                        setTimeout(() => {
+                            saveStatus.textContent = '';
+                        }, 2000);
+                    } else {
+                        saveStatus.textContent = 'Error saving changes';
+                    }
+                })
+                .catch(error => {
+                    saveStatus.textContent = 'Error saving changes';
+                });
+            }, 1000);  // Wait 1 second after typing stops before saving
+        });
+    }
+</script>
+{% endblock %}

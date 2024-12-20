@@ -1,25 +1,47 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-10">
+    <div class="mb-5">
+      <h1 class="display-4 mb-3">{{ collection.title }}</h1>
+      {% if collection.description %}
+        <p class="lead text-muted">{{ collection.description }}</p>
+      {% endif %}
+    </div>
 
-        <h1>{{ collection.title }}</h1>
-        <p>{{ collection.description }}</p>
-        <h2>Meals</h2>
-        
-        <!-- Add a form to submit a URL -->
-        <form method="post" action="{% url 'scrape' %}">
+    <div class="card mb-5">
+      <div class="card-body">
+        <h2 class="h4 mb-3">
+          <i class="bi bi-plus-circle"></i> Import New Recipe
+        </h2>
+        <form method="post" action="{% url 'main:scrape' %}" class="mb-0">
           {% csrf_token %}
-          <!-- Hidden input to pass collection ID -->
           <input type="hidden" name="collection_id" value="{{ collection.id }}">
           
-          <div class="form-group">
-            <label for="recipe-url">Recipe URL:</label>
-            <input type="url" class="form-control" id="recipe-url" name="recipe_url" placeholder="Enter recipe URL" required>
+          <div class="row g-3 align-items-center">
+            <div class="col-md-8">
+              <div class="form-floating">
+                <input type="url" class="form-control" id="recipe-url" name="recipe_url" placeholder="Enter recipe URL" required>
+                <label for="recipe-url">Recipe URL</label>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-cloud-download"></i> Import Recipe
+              </button>
+            </div>
           </div>
-          <button type="submit" class="btn btn-primary mt-2">Import Recipe</button>
         </form>
+      </div>
+    </div>
 
-        {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=True %}
-
+    <div class="mb-4">
+      <h2 class="h3 mb-4">
+        <i class="bi bi-collection"></i> Your Recipes
+      </h2>
+      {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=True %}
+    </div>
+  </div>
+</div>
 {% endblock %}
-

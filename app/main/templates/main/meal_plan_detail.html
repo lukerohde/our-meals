@@ -1,7 +1,14 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block module_js %}
+    <script src="{% static 'meal_plan/dist/index.js' %}"></script>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container py-4" data-controller="meal-plan" 
+    data-meal-plan-save-url-value="{% url 'main:save_grocery_list' meal_plan.shareable_link %}"
+    data-meal-plan-csrf-token-value="{{ csrf_token }}">
     <!-- Header Section -->
     <div class="row mb-5">
         <div class="col-12">
@@ -96,17 +103,14 @@
         <div class="row mb-5">
             <div class="col-12">
                 <div class="card bg-light">
-                    <div class="card-body d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-people-fill text-primary me-3 fs-4"></i>
-                            <div>
-                                <h6 class="mb-1">Invite Others</h6>
-                                <p class="text-muted mb-0 small">Share this meal plan and cook books with friends and family</p>
-                            </div>
+                    <div class="card-body">
+                        <h5 class="card-title">Share this meal plan</h5>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" data-meal-plan-target="shareLink" value="{{ request.build_absolute_uri }}" readonly>
+                            <button class="btn btn-primary" type="button" data-action="meal-plan#copyLink">
+                                <i class="bi bi-clipboard me-2"></i>Copy Link
+                            </button>
                         </div>
-                        <button class="btn btn-primary" onclick="copyLink()">
-                            <i class="bi bi-clipboard me-2"></i>Copy Invitation Link
-                        </button>
                     </div>
                 </div>
             </div>
@@ -122,10 +126,8 @@
     </div>
 
     <!-- Grocery List Section -->
-    <div class="row mb-5">
+    <div class="row">
         <div class="col-12">
-            <h2 class="mb-4">Grocery List</h2>
-            
             {% if is_member %}
                 <!-- AI Instructions -->
                 <div class="card mb-4">
@@ -152,87 +154,37 @@
                 </div>
 
                 <!-- Editable List -->
-                <div class="form-group mb-3">
-                    <textarea 
-                        id="grocery_list" 
-                        class="form-control" 
-                        rows="20" 
-                        style="font-family: monospace;"
-                    >{{ meal_plan.grocery_list }}</textarea>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="card-title mb-0">Grocery List</h5>
+                            <small class="text-muted" data-meal-plan-target="saveStatus"></small>
+                        </div>
+                        <textarea 
+                            class="form-control" 
+                            data-meal-plan-target="groceryList" 
+                            rows="10" 
+                            placeholder="Add your grocery items here..."
+                        >{{ meal_plan.grocery_list }}</textarea>
+                    </div>
                 </div>
-                <div id="save-status" class="text-muted small"></div>
             {% else %}
-                <pre class="bg-light p-4 rounded">{{ meal_plan.grocery_list }}</pre>
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Grocery List</h5>
+                        <pre class="bg-light p-4 rounded">{{ meal_plan.grocery_list }}</pre>
+                    </div>
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-    function copyLink() {
-        const link = "{{ request.build_absolute_uri }}";
-        navigator.clipboard.writeText(link).then(() => {
-            // Create a toast notification
-            const toast = document.createElement('div');
-            toast.className = 'position-fixed bottom-0 end-0 p-3';
-            toast.style.zIndex = '11';
-            toast.innerHTML = `
-                <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            <i class="bi bi-check-circle me-2"></i>Link copied to clipboard!
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(toast);
-            const toastEl = new bootstrap.Toast(toast.querySelector('.toast'));
-            toastEl.show();
-            
-            // Remove the toast after it's hidden
-            toast.addEventListener('hidden.bs.toast', () => {
-                document.body.removeChild(toast);
-            });
-        });
-    }
-
-    // Auto-save functionality
-    let saveTimeout;
-    const groceryList = document.getElementById('grocery_list');
-    const saveStatus = document.getElementById('save-status');
-    
-    if (groceryList) {
-        groceryList.addEventListener('input', function() {
-            clearTimeout(saveTimeout);
-            saveStatus.textContent = 'Saving...';
-            
-            saveTimeout = setTimeout(() => {
-                const data = new FormData();
-                data.append('grocery_list', groceryList.value);
-                
-                fetch('{% url "main:save_grocery_list" meal_plan.shareable_link %}', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: data
-                })
-                .then(response => {
-                    if (response.ok) {
-                        saveStatus.textContent = 'Changes saved';
-                        setTimeout(() => {
-                            saveStatus.textContent = '';
-                        }, 2000);
-                    } else {
-                        saveStatus.textContent = 'Error saving changes';
-                    }
-                })
-                .catch(error => {
-                    saveStatus.textContent = 'Error saving changes';
-                });
-            }, 1000);  // Wait 1 second after typing stops before saving
-        });
-    }
+    // Removed auto-save functionality as it's now handled by the Stimulus controller
 </script>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/controllers/meal_plan_controller.js' %}"></script>
 {% endblock %}

@@ -9,6 +9,7 @@ services:
       - ./docker-start.override
     ports:
       - $APP_PORT:3000
+      - "1234:1234"  # Add this line for HMR
     networks:
       development:
   pg:

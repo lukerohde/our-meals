@@ -26,6 +26,7 @@ export default class extends Controller {
         if (this.hasGroceryListTarget) {
             this.setupAutoSave()
         }
+        console.log('MealPlanController controller connected')
     }
 
     // Sets up auto-save functionality for grocery list
@@ -70,7 +71,7 @@ export default class extends Controller {
     async copyLink() {
         try {
             await navigator.clipboard.writeText(this.shareLinkTarget.value)
-            this.showToast('Link copied to clipboard!')
+            this.showToast('Link copied to clipboard')
         } catch (err) {
             this.showToast('Failed to copy link', false)
             console.error('Failed to copy link:', err)

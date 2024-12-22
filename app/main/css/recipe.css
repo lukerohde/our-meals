@@ -1,0 +1,75 @@
+/* Recipe specific styles */
+.recipe-card {
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+
+.recipe-card img {
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.ingredients-list {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.method-steps {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.method-steps li {
+  margin-bottom: 1rem;
+  padding-left: 1rem;
+}
+
+@media (max-width: 767.98px) {
+  .ingredients-list,
+  .method-steps {
+    padding: 0;
+  }
+}
+
+/* Recipe header */
+.recipe-header {
+  background-color: var(--light-bg);
+  border-radius: 0.5rem;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.recipe-ingredients {
+  background-color: var(--light-bg);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+.recipe-instructions {
+  counter-reset: step;
+}
+
+.recipe-step {
+  position: relative;
+  padding-left: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.recipe-step::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2rem;
+  height: 2rem;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}

@@ -1,9 +1,4 @@
 {% extends 'base.html' %}
-{% load static %}
-
-{% block module_js %}
-    <script src="{% static 'meal_plan/dist/index.js' %}"></script>
-{% endblock %}
 
 {% block content %}
 <div class="container py-4" data-controller="meal-plan" 
@@ -179,12 +174,4 @@
         </div>
     </div>
 </div>
-
-<script>
-    // Removed auto-save functionality as it's now handled by the Stimulus controller
-</script>
-{% endblock %}
-
-{% block extra_js %}
-    <script src="{% static 'js/controllers/meal_plan_controller.js' %}"></script>
 {% endblock %}

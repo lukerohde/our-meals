@@ -4,8 +4,8 @@
   "description": "Our Meals web application",
   "private": true,
   "scripts": {
-    "dev": "parcel watch 'static/js/index.js' --dist-dir static/dist --public-url /static/dist --hmr-port 1234",
-    "build": "parcel build 'static/js/index.js' --dist-dir static/dist --public-url /static/dist --no-source-maps",
+    "dev": "parcel watch 'static/js/index.js' 'static/css/index.css' --dist-dir static/dist --public-url /static/dist --hmr-port 1234",
+    "build": "parcel build 'static/js/index.js' 'static/css/index.css' --dist-dir static/dist --public-url /static/dist --no-source-maps",
     "test": "jest",
     "lint": "eslint 'main/js/**/*.js' 'static/js/**/*.js'",
     "format": "prettier --write 'main/js/**/*.js' 'static/js/**/*.js'",

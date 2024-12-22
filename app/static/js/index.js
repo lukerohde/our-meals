@@ -26,15 +26,17 @@ if (!application) {
         console.log('Application initialized successfully')
 
         // Register all controllers
-        console.log('Registering controllers...')
-        application.register('meal-plan', MealPlanController)
-        application.register('recipe-importer', RecipeImporterController)
-        application.register('meal-actions', MealActionsController)
-        console.log('Controllers registered successfully')
-    } catch (error) {
+     } catch (error) {
         console.error('Failed to initialize application:', error)
     }
 }
+
+console.log('Registering controllers...')
+application.register('meal-plan', MealPlanController)
+application.register('recipe-importer', RecipeImporterController)
+application.register('meal-actions', MealActionsController)
+console.log('Controllers registered successfully')
+
 
 // Export the application instance for other modules to use
 export { application }

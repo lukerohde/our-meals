@@ -4,11 +4,11 @@
   "description": "Our Meals web application",
   "private": true,
   "scripts": {
-    "dev": "parcel watch 'static/meal_plan/js/index.js' --dist-dir static/meal_plan/dist --public-url /static/meal_plan/dist --hmr-port 1234",
-    "build": "parcel build 'static/meal_plan/js/index.js' --dist-dir static/meal_plan/dist --public-url /static/meal_plan/dist --no-source-maps",
+    "dev": "parcel watch 'static/js/index.js' --dist-dir static/dist --public-url /static/dist --hmr-port 1234",
+    "build": "parcel build 'static/js/index.js' --dist-dir static/dist --public-url /static/dist --no-source-maps",
     "test": "jest",
-    "lint": "eslint 'static/meal_plan/js/**/*.js'",
-    "format": "prettier --write 'static/meal_plan/js/**/*.js'",
+    "lint": "eslint 'main/js/**/*.js' 'static/js/**/*.js'",
+    "format": "prettier --write 'main/js/**/*.js' 'static/js/**/*.js'",
     "fix": "npm run format && npm run lint"
   },
   "dependencies": {

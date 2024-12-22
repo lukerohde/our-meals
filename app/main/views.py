@@ -87,6 +87,7 @@ def collection_create(request):
 @login_required
 @transaction.atomic
 def scrape_recipe(request):
+    import ipdb; ipdb.set_trace()
     recipe_url = request.POST.get('recipe_url')
     collection_id = request.POST.get('collection_id')
     collection = get_object_or_404(Collection, id=collection_id)

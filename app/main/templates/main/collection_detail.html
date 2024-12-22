@@ -15,14 +15,18 @@
         <h2 class="h4 mb-3">
           <i class="bi bi-plus-circle"></i> Import New Recipe
         </h2>
-        <form method="post" action="{% url 'main:scrape' %}" class="mb-0">
+        <form method="post" action="{% url 'main:scrape' %}" 
+              data-controller="recipe-importer"
+              data-action="submit->recipe-importer#submitForm">
           {% csrf_token %}
           <input type="hidden" name="collection_id" value="{{ collection.id }}">
           
           <div class="row g-3 align-items-center">
             <div class="col-md-8">
               <div class="form-floating">
-                <input type="url" class="form-control" id="recipe-url" name="recipe_url" placeholder="Enter recipe URL" required>
+                <input type="url" class="form-control" id="recipe-url" name="recipe_url" 
+                       placeholder="Enter recipe URL" required
+                       data-recipe-importer-target="input">
                 <label for="recipe-url">Recipe URL</label>
               </div>
             </div>

@@ -13,11 +13,12 @@
     <div class="card mb-5">
       <div class="card-body">
         <h2 class="h4 mb-3">
-          <i class="bi bi-plus-circle"></i> Import New Recipe
+          <i class="bi bi-plus-circle"></i> Import New Recipe!
         </h2>
         <form method="post" action="{% url 'main:scrape' %}" 
               data-controller="recipe-importer"
-              data-action="submit->recipe-importer#submitForm">
+              data-action="submit->recipe-importer#submitForm"
+              data-recipe-importer-target="form">
           {% csrf_token %}
           <input type="hidden" name="collection_id" value="{{ collection.id }}">
           
@@ -31,10 +32,21 @@
               </div>
             </div>
             <div class="col-md-4">
-              <button type="submit" class="btn btn-primary w-100">
+              <button type="submit" class="btn btn-primary w-100" data-recipe-importer-target="submit">
                 <i class="bi bi-cloud-download"></i> Import Recipe
               </button>
+              <div class="ai-loading d-none w-100" data-recipe-importer-target="loading">
+                <span>Analyzing Recipe</span>
+                <div class="dots">
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                  <div class="dot"></div>
+                </div>
+              </div>
             </div>
+          </div>
+          
+          <div class="alert alert-danger mt-3 d-none" data-recipe-importer-target="error" role="alert">
           </div>
         </form>
       </div>

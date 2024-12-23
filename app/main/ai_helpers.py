@@ -3,6 +3,9 @@ from openai import OpenAI
 import re
 import json
 import logging
+import requests
+from bs4 import BeautifulSoup
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -98,3 +101,44 @@ def summarize_grocery_list_with_genai(ingredients, grocery_list_instruction):
     response_text = response.choices[0].message.content
     
     return response_text
+
+
+def scrape_recipe_from_url(recipe_url):
+    """
+    Scrapes a recipe from the given URL and returns structured data.
+    """
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
+                        'AppleWebKit/537.36 (KHTML, like Gecko) ' +
+                        'Chrome/58.0.3029.110 Safari/537.3',
+        'Referer': 'https://www.google.com/',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive'
+    }
+    
+    try:
+        response = requests.get(recipe_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        recipe_text = extract_recipe_text(soup)
+        result = parse_recipe_with_genai(recipe_text)
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error scraping recipe from {recipe_url}: {str(e)}")
+        raise ValueError(f"Failed to scrape recipe: {str(e)}")
+
+
+def extract_recipe_text(soup):
+    """Extract recipe text from HTML"""
+    # Remove script and style elements
+    for script in soup(["script", "style"]):
+        script.decompose()
+    
+    # Get text and normalize whitespace
+    text = soup.get_text()
+    lines = (line.strip() for line in text.splitlines())
+    text = ' '.join(line for line in lines if line)
+    return text

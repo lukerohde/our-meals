@@ -1,4 +1,6 @@
 import { Controller } from '@hotwired/stimulus'
+import { showToast } from '../../../static/js/utils/toast'
+
 /**
  * Meal Plan Controller
  * 
@@ -55,14 +57,17 @@ export default class extends Controller {
             
             if (response.ok) {
                 this.saveStatusTarget.textContent = 'Changes saved'
+                showToast('Changes saved', 'success')
                 setTimeout(() => {
                     this.saveStatusTarget.textContent = ''
                 }, 2000)
             } else {
                 this.saveStatusTarget.textContent = 'Error saving changes'
+                showToast('Failed to save changes', 'error')
             }
         } catch (error) {
             this.saveStatusTarget.textContent = 'Error saving changes'
+            showToast('Failed to save changes', 'error')
             console.error('Failed to save grocery list:', error)
         }
     }
@@ -71,34 +76,10 @@ export default class extends Controller {
     async copyLink() {
         try {
             await navigator.clipboard.writeText(this.shareLinkTarget.value)
-            this.showToast('Link copied to clipboard')
+            showToast('Link copied to clipboard', 'success')
         } catch (err) {
-            this.showToast('Failed to copy link', false)
+            showToast('Failed to copy link', 'error')
             console.error('Failed to copy link:', err)
         }
-    }
-
-    // Utility method for showing toast notifications
-    showToast(message, success = true) {
-        const toast = document.createElement('div')
-        toast.className = 'position-fixed bottom-0 end-0 p-3'
-        toast.style.zIndex = '11'
-        toast.innerHTML = `
-            <div class="toast align-items-center text-white bg-${success ? 'success' : 'danger'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        <i class="bi bi-${success ? 'check-circle' : 'x-circle'} me-2"></i>${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        `
-        document.body.appendChild(toast)
-        const toastEl = new bootstrap.Toast(toast.querySelector('.toast'))
-        toastEl.show()
-        
-        toast.addEventListener('hidden.bs.toast', () => {
-            document.body.removeChild(toast)
-        })
     }
 }

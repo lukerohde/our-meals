@@ -10,7 +10,6 @@ urlpatterns = [
     path('meals/<int:pk>/', views.meal_detail, name='meal_detail'),  
     path('scrape/', views.scrape_recipe, name='scrape'),
     #path('meal-plan/', views.meal_plan, name='meal_plan'),
-    path('generate-grocery-list/', views.generate_grocery_list, name='generate_grocery_list'),
     path('meal-plan/<str:shareable_link>/', views.meal_plan_detail, name='meal_plan_detail'),
     path('meal-plan/<str:shareable_link>/join/', views.join_meal_plan, name='join_meal_plan'),
     path('meal-plan/<str:shareable_link>/leave/', views.leave_meal_plan, name='leave_meal_plan'),

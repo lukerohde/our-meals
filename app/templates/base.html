@@ -110,6 +110,13 @@
 
     <!-- Main Content -->
     <div class="container py-4">
+        {% if messages %}
+        <div id="django-messages" class="d-none">
+            {% for message in messages %}
+            <div class="message" data-message="{{ message }}" data-tags="{{ message.tags }}"></div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </div>
 
@@ -118,5 +125,17 @@
     <!-- <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>-->
     <script src="{% static 'dist/js/index.js' %}" defer></script>
     {% block module_js %}{% endblock %}
+
+    {% if messages %}
+    <script type="module">
+        import { showToast } from "{% static 'dist/js/utils/toast.js' %}"
+        document.addEventListener('DOMContentLoaded', () => {
+            const messages = document.querySelectorAll('#django-messages .message')
+            messages.forEach(msg => {
+                showToast(msg.dataset.message, msg.dataset.tags)
+            })
+        })
+    </script>
+    {% endif %}
 </body>
 </html>

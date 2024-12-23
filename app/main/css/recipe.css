@@ -73,3 +73,47 @@
   justify-content: center;
   font-weight: bold;
 }
+
+/* AI Loading Animation */
+.ai-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  background: var(--bs-primary);
+  color: white;
+}
+
+.ai-loading .dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.ai-loading .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: currentColor;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: pulse 1.5s infinite;
+}
+
+.ai-loading .dot:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.ai-loading .dot:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}

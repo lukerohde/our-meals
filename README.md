@@ -4,15 +4,15 @@ A totally unnessary django app to manage our menu - it uses GenAI to scrape reci
 
 TODO
 * Edit a meal
-* AI instruction for meal scraping
-* Edit a meal plan - change its name
+* DONE AI instruction for meal scraping
+* DONE Edit a meal plan - change its name
 * DONE Delete a meal
 * Delete a collection
 * Account settings w/Set region
 * DONE Add to meal plan
 * DONE Share meal plan with friends
 * DONE Show shopping list
-* Share meal collection with friends?
+* DONE Share meal collection with friends?
 * Import and display pictures
 * DONE Accept a family invite
 * DONE Invite a family member
@@ -20,6 +20,9 @@ TODO
     * Tests!! 
     * Refactor scrapping - that's super ugly
     * Refactor authorisation check (meal plan member)
+    * DONE Refactor JS
+    * DONE Refactor CSS
+    * Refactor views & URLs
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)
@@ -32,7 +35,7 @@ TODO
     * DONE Sign up when joining a meal plan
     * DONE Fix intermittent 500 on email use
     * Sign up or sign in, as the same page? 
-    * Redirect to meal plan after sign up
+    * DONE Redirect to meal plan after sign up
 * Improve meal import
     * Handle coles online and www.deliciousmagazine.co.uk 
     * Checkout python recipe-scraper
@@ -41,10 +44,14 @@ TODO
     * Convert ingredients to region
     * Better handle odd units (to taste, one piece of egg)
 * Improve Nav
-    * Get to collections from meal plan
-    * Meal plan is more prominent
-    * Can add meal to meal plan from meal details page
+    * DONE Get to collections from meal plan
+    * DONE Meal plan is more prominent
+    * DONE Can add meal to meal plan from meal details page
     * DONE Improve error pages
+    * AJAX Add to meal plan
+    * AJAX Remove from meal plan
+    * AJAX Grocery list
+    * Async or streaming grocery list
 
 # Setup
 

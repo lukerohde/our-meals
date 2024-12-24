@@ -14,6 +14,7 @@ import logging
 from collections import defaultdict
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
 from django.urls import reverse
+from django.template.loader import render_to_string
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -284,27 +285,39 @@ def leave_meal_plan(request, shareable_link):
 def toggle_meal_in_meal_plan(request, meal_id):
     """
     Adds or removes a meal from the user's latest meal plan.
-    Redirects back to the originating page.
+    Handles both AJAX and regular form submissions.
     """
-    meal_plan = latest_meal_plan(request)
-
-    if not meal_plan:
-        messages.error(request, "No active meal plan found.")
-        return redirect('main:collection_detail', pk=request.GET.get('collection_id'))
-
     meal = get_object_or_404(Meal, id=meal_id)
+    meal_plan = latest_meal_plan(request)
+    collection_id = request.GET.get('collection_id')
     
-    if meal_plan.meals.filter(id=meal.id).exists():
+    if meal in meal_plan.meals.all():
         meal_plan.meals.remove(meal)
-        messages.info(request, f"'{meal.title}' has been removed from your meal plan.")
+        message = f"{meal.title} removed from meal plan!"
     else:
         meal_plan.meals.add(meal)
-        messages.success(request, f"'{meal.title}' has been added to your meal plan.")
+        message = f"{meal.title} added to meal plan!"
     
-    meal_plan.save()
+    messages.success(request, message)
     
-    next_url = request.POST.get('next')
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('main:collection_list')))
+    if request.headers.get('HX-Request'):
+        # For AJAX requests, render just the meal partial
+        collection = get_object_or_404(Collection, id=collection_id) if collection_id else None
+        meal_plan_recipes = set(meal_plan.meals.values_list('id', flat=True))
+        context = {
+            'meal': meal,
+            'show_buttons': True,
+            'collection': collection,
+            'meal_plan_recipes': meal_plan_recipes
+        }
+        html = render_to_string('main/_meal.html', context, request)
+        return JsonResponse({
+            'html': html,
+            'message': message
+        })
+    
+    # For regular form submissions, redirect back to the referring page
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 @require_POST
 @login_required

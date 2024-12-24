@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus'
+import { showToast } from '../../../static/js/utils/toast'
 
 /**
  * Meal Actions Controller
@@ -7,6 +8,8 @@ import { Controller } from '@hotwired/stimulus'
  * with confirmation dialogs and loading states
  */
 export default class extends Controller {
+  static targets = ['form']
+
   static values = {
     confirmMessage: String
   }
@@ -16,15 +19,41 @@ export default class extends Controller {
   }
 
   delete(event) {
-    if (!confirm(this.confirmMessageValue || 'Are you sure?')) {
+    if (!confirm(this.confirmMessageValue || 'Are you sure???')) {
       event.preventDefault()
     }
   }
 
-  // Placeholder for future AJAX toggle
   toggle(event) {
-    console.log('Toggle meal in plan')
-    // For now, just let the form submit normally
-    // Later we can add AJAX here
+    event.preventDefault()
+    
+    try {
+      fetch(this.formTarget.action, {
+        method: 'POST',
+        headers: {
+          'HX-Request': 'true',
+          'X-CSRFToken': this.formTarget.querySelector('[name=csrfmiddlewaretoken]').value,
+          'Accept': 'application/json',
+        },
+        body: new FormData(this.formTarget)
+      })
+      .then(async response => {
+        if (!response.ok) {
+          const errorText = await response.text()
+          showToast(errorText, 'error')
+          return
+        }
+        
+        const data = await response.json()
+        // Replace the entire meal card with the new version
+        this.element.closest('.col').outerHTML = data.html
+        // Show the message from Django
+        showToast(data.message, 'success')
+      })
+      
+    } catch (error) {
+      console.error('Error toggling meal:', error)
+      showToast('Failed to update meal plan', 'error')
+    }
   }
 }

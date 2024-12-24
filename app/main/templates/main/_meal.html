@@ -1,0 +1,51 @@
+{% load static %}
+
+<div class="col">
+  <div class="card h-100 meal-card" data-controller="meal-actions">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <h3 class="card-title h5 mb-0">
+          <a href="{% url 'main:meal_detail' meal.pk %}" class="text-decoration-none">
+            {{ meal.title }}
+          </a>
+        </h3>
+        {% if show_buttons %}
+          <div class="d-flex gap-2">
+            <form method="POST" action="{% url 'main:toggle_meal_in_meal_plan' meal.id %}?collection_id={{ collection.id }}" 
+                  class="d-inline"
+                  data-meal-actions-target="form"
+                  data-action="submit->meal-actions#toggle">
+    
+              {% csrf_token %}
+              <button type="submit" 
+                      class="btn btn-sm {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-outline-success{% endif %}"
+                      title="{% if meal.id in meal_plan_recipes %}Remove from Meal Plan{% else %}Add to Meal Plan{% endif %}">
+                {% if meal.id in meal_plan_recipes %}
+                  <i class="bi bi-check-circle-fill"></i>
+                {% else %}
+                  <i class="bi bi-plus-circle"></i>
+                {% endif %}
+              </button>
+            </form>
+            <form method="POST" action="{% url 'main:delete_meal' meal.id %}" 
+                  class="d-inline"
+                  data-action="submit->meal-actions#delete"
+                  data-meal-actions-confirm-message-value="Are you sure you want to delete this meal?">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button type="submit" 
+                      class="btn btn-sm btn-outline-danger"
+                      title="Delete Meal">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+      {% if meal.description %}
+        <p class="card-text small text-muted mb-0">{{ meal.description|truncatechars:100 }}</p>
+      {% endif %}
+      <a href="{% url 'main:meal_detail' meal.pk %}" class="stretched-link position-relative" style="z-index: 1;"></a>
+    </div>
+  </div>
+</div>

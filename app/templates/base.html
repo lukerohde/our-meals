@@ -110,14 +110,17 @@
 
     <!-- Main Content -->
     <div class="container py-4">
-        {% if messages %}
-        <div id="django-messages" class="d-none">
-            {% for message in messages %}
-            <div class="message" data-message="{{ message }}" data-tags="{{ message.tags }}"></div>
-            {% endfor %}
-        </div>
-        {% endif %}
         {% block content %}{% endblock %}
+        
+        <!-- Django Messages -->
+        <div id="django-messages" class="d-none">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message" data-tags="{{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
     </div>
 
     <!-- Bootstrap JS Bundle -->
@@ -126,16 +129,21 @@
     <script src="{% static 'dist/js/index.js' %}" defer></script>
     {% block module_js %}{% endblock %}
 
-    {% if messages %}
     <script type="module">
-        import { showToast } from "{% static 'dist/js/utils/toast.js' %}"
+        // Convert Django messages to toasts
         document.addEventListener('DOMContentLoaded', () => {
             const messages = document.querySelectorAll('#django-messages .message')
             messages.forEach(msg => {
-                showToast(msg.dataset.message, msg.dataset.tags)
+                const type = msg.dataset.tags || 'info'
+                // Let the controllers handle their own toasts
+                if (type === 'error' || type === 'success') {
+                    const event = new CustomEvent('show-toast', { 
+                        detail: { message: msg.textContent, type } 
+                    })
+                    document.dispatchEvent(event)
+                }
             })
         })
     </script>
-    {% endif %}
 </body>
 </html>

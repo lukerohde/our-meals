@@ -48,8 +48,8 @@ TODO
     * DONE Meal plan is more prominent
     * DONE Can add meal to meal plan from meal details page
     * DONE Improve error pages
-    * AJAX Add to meal plan
-    * AJAX Remove from meal plan
+    * DONE AJAX Add to meal plan
+    * DONE AJAX Remove from meal plan
     * AJAX Grocery list
     * Async or streaming grocery list
 

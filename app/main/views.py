@@ -303,12 +303,12 @@ def toggle_meal_in_meal_plan(request, meal_id):
     if request.headers.get('HX-Request'):
         # For AJAX requests, render just the meal partial
         collection = get_object_or_404(Collection, id=collection_id) if collection_id else None
-        meal_plan_recipes = set(meal_plan.meals.values_list('id', flat=True))
+        meal_plan_meals = set(meal_plan.meals.values_list('id', flat=True))
         context = {
             'meal': meal,
             'show_buttons': True,
             'collection': collection,
-            'meal_plan_recipes': meal_plan_recipes
+            'meal_plan_recipes': meal_plan_meals  # Keep variable name for template compatibility
         }
         html = render_to_string('main/_meal.html', context, request)
         return JsonResponse({
@@ -322,10 +322,25 @@ def toggle_meal_in_meal_plan(request, meal_id):
 @require_POST
 @login_required
 def delete_meal(request, meal_id):
+    """
+    Delete a meal and handle both AJAX and regular form submissions.
+    For meal plan page, removes the meal card. For collection page, redirects.
+    """
     meal = get_object_or_404(Meal, id=meal_id)
     collection = meal.collection
     meal.delete()
-    return redirect('main:collection_detail', pk=collection.id)
+    
+    message = f"{meal.title} has been deleted"
+    messages.success(request, message)
+    
+    if request.headers.get('HX-Request'):
+        return JsonResponse({
+            'message': message,
+            'deleted': True
+        })
+    
+    # For regular form submissions, redirect back to the referring page
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 @require_POST
 @login_required

@@ -3,8 +3,8 @@
 cd src;
 . .env
 
-# we want to repopulate these, http first for certbot
-rm .nginx/http*.conf
+# we want to repopulate these, http first for certbot (also deletes the dev.conf file)
+rm .nginx/*.conf
 mv .tmp/http-*.conf .nginx/
 docker-compose build
 docker-compose up nginx -d

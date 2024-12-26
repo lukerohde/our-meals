@@ -11,16 +11,16 @@ services:
       - $APP_PORT:3000
       - "1234:1234"  # Add this line for HMR
     networks:
-      development:
+      - development
   pg:
     ports:
       - $POSTGRES_PORT:5432
-    networks:
-      - development
     volumes:
       - ./.pg_data:/pg_data
       - db_root:/root # for bash history etc
 #      - ./backup.sql.gz:/docker-entrypoint-initdb.d/seed.sql.gz
+    networks:
+      - development
   nginx:
     image: nginx:1.15-alpine
     restart: unless-stopped
@@ -36,6 +36,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    networks:
+      - development
 networks:
   development:
 volumes:

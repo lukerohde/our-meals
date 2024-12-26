@@ -52,6 +52,16 @@ TODO
     * DONE AJAX Remove from meal plan
     * AJAX Grocery list
     * Async or streaming grocery list
+* Improve deployment
+    * DONE Serve via gunicorn
+    * Multistage docker build with;
+        * build
+        * test
+        * run
+    * Makefile
+    * Render deploy yaml
+    * Github action for test and deploy off main
+
 
 # Setup
 
@@ -98,8 +108,19 @@ Once in the app container you can run the django commands
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser --noinput
+npm run build
 python manage.py runserver 0.0.0.0:3000
 ``` 
+
+If you want hot reloading js and css
+```
+docker compose exec app npm run dev
+```
+
+To simulate production running via gunicorn and nginx on localhost port 80 
+```
+docker compose exec app gunicorn ourmenu wsgi:application --bind 0.0.0.0:3000 --workers 3 --chdir .
+```
 
 # Deployment Instructions
 ## Deploying to Digital Ocean

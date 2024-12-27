@@ -1,5 +1,7 @@
 services:
   app:
+    build:
+      target: production
     ports:
       - $APP_PORT:3000
   nginx:

@@ -123,7 +123,7 @@ docker compose exec app gunicorn ourmenu wsgi:application --bind 0.0.0.0:3000 --
 ```
 
 # Deployment Instructions
-## Deploying to Digital Ocean
+## Deploying to Digital Ocean Droplet
 
 To deploy to digital ocean you'll need doctl installed as a prerequisite.
 
@@ -151,3 +151,9 @@ If you are using the digital ocean deploy scripts in /deploy, there are two file
 * `.docker-compose-override.yml.prod` which open the app port
 
 To setup completely new hosting, I purchased a domain from namecheap and configured custom dns pointing to digital ocean's nameservers - ns1.digitalocean.com, ns2.digitalocean.com, ns3.digitalocean.com (don't forgot to click the tick!).  I created a new project in digital ocean just to group the server and domain.  I added my new mac's public ssh key to my digital ocean team.   I think this key is used in two ways.  First to avoid needing to config doctl with a token and provide it all the time, automating the deployment script.  It is also added to the server by the deployment script for passwordless sign in.  I updated the .env-prod with domain name I purchased, and my ssh key name and public key.  I click-ops'd a dns domain/zone in digital ocean, but I think the deploy script would have done that for me. After that it was just a matter of running the deploy script.  Because I failed to save the custom dns settings, certbot was failing because it reach my server to download the challenge file.  Waiting for DNS propergation is fun.  I also had a bunch of troubles because I was missing the .nginx, .certbot directories resulting in them having root permissions.
+
+## Deploying to Render
+
+* Signed up to render.com with my github account
+* Account settings -> API Keys -> Create API key -> Copie d to .env
+* Account settings -> Account Security -> Git Deployment Credentials -> Added Github Access to Our-Meals

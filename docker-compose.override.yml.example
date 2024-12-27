@@ -1,12 +1,14 @@
 services:
   app:
-    volumes:
-      - ./app:/home/pyuser/app:delegated
-      - ./.media_volume:/home/pyuser/app/media
-      - ./.packages:/home/pyuser/.local
-      - app_user:/home/pyuser # for bash history etc
-    command:
-      - ./docker-start.override
+    build:
+      target: build
+      volumes:
+        - ./app:/home/pyuser/app:delegated
+        - ./.media_volume:/home/pyuser/app/media
+        - ./.packages:/home/pyuser/.local
+        - app_user:/home/pyuser # for bash history etc
+      command:
+        - ./docker-start.override
     ports:
       - $APP_PORT:3000
       - "1234:1234"  # Add this line for HMR

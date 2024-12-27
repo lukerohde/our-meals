@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: ./app.dockerfile
+      target: production
     restart: unless-stopped
     environment:
       - APP_PORT

@@ -1,5 +1,5 @@
-# BASIC INSTALL
-FROM python:3.11-slim-bookworm
+# Build stage
+FROM python:3.11-slim-bookworm as builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -32,7 +32,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/home/pyuser/.local/bin:${PATH}" \
     PYTHON_VERSION=3.11
 
-# Set up the working directory
 WORKDIR /home/pyuser/app
 
 # Copy Python requirements and install
@@ -47,10 +46,40 @@ RUN npm install
 # Copy the rest of the application code
 COPY --chown=pyuser:pyuser ./app/ ./
 
-# Build static files for production
-RUN if [ "$NODE_ENV" = "production" ] ; then \
-        npm run build ; \
-    fi
+# Build static files
+RUN npm run build
 RUN python manage.py collectstatic --noinput
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:3000"]
+# Test stage
+FROM builder as test
+# This stage will be used for running tests
+# Placeholder for future test setup with playwright and jest
+RUN echo "Test stage - to be implemented with playwright and jest"
+
+# Production stage
+FROM python:3.11-slim-bookworm as production
+
+RUN adduser --disabled-password --gecos "" pyuser
+WORKDIR /home/pyuser/app
+
+# Copy only what's needed from builder
+COPY --from=builder /home/pyuser/.local /home/pyuser/.local
+COPY --from=builder /home/pyuser/app/main /home/pyuser/app/main
+COPY --from=builder /home/pyuser/app/ourmenu /home/pyuser/app/ourmenu
+COPY --from=builder /home/pyuser/app/staticfiles /home/pyuser/app/staticfiles
+COPY --from=builder /home/pyuser/app/templates /home/pyuser/app/templates
+COPY --from=builder /home/pyuser/app/manage.py /home/pyuser/app/manage.py
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="/home/pyuser/.local/lib/python3.11/site-packages:${PYTHONPATH}" \
+    PATH="/home/pyuser/.local/bin:${PATH}"
+
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+USER pyuser
+
+# Run with gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:3000", "our_meals.wsgi:application"]

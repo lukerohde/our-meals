@@ -119,7 +119,7 @@ docker compose exec app npm run dev
 
 To simulate production running via gunicorn and nginx on localhost port 80 
 ```
-docker compose exec app gunicorn ourmenu wsgi:application --bind 0.0.0.0:3000 --workers 3 --chdir .
+docker compose exec app gunicorn ourmeals wsgi:application --bind 0.0.0.0:3000 --workers 3 --chdir .
 ```
 
 # Deployment Instructions
@@ -154,6 +154,37 @@ To setup completely new hosting, I purchased a domain from namecheap and configu
 
 ## Deploying to Render
 
-* Signed up to render.com with my github account
-* Account settings -> API Keys -> Create API key -> Copie d to .env
-* Account settings -> Account Security -> Git Deployment Credentials -> Added Github Access to Our-Meals
+1. Prerequisites:
+   - A Render account (sign up at render.com)
+   - Your repository connected to Render
+   - Render API key (for automated deployments)
+
+2. Initial Setup:
+   - Sign in to Render with your GitHub account
+   - Go to Account Settings -> API Keys -> Create API Key
+   - Add the API key to your .env file: `RENDER_API_KEY=your_key_here`
+   - In Account Settings -> Account Security, add GitHub access to Our-Meals
+
+3. Deployment:
+   - The `render.yaml` file in the repository root defines your service configuration
+   - Push your changes to GitHub
+   - Render will automatically detect the `render.yaml` and create:
+     - A PostgreSQL database
+     - A web service running your Docker container
+     - Automatic SSL/TLS certificates for dev.ourmeals.online
+
+4. DNS Configuration:
+   - In your DNS provider, create a CNAME record:
+     - Host: dev
+     - Value: your-app-name.onrender.com (you'll get this URL after first deployment)
+   - Render will automatically provision and renew SSL certificates
+
+5. Environment Variables:
+   - Most environment variables are automatically set from the database service
+   - Set any additional environment variables in the Render dashboard or `render.yaml`
+   - Sensitive values like `DJANGO_SECRET_KEY` should be set manually in the dashboard
+
+6. Monitoring and Scaling:
+   - Monitor your app in the Render dashboard
+   - Adjust number of instances in `render.yaml` or through the dashboard
+   - View logs in real-time through the Render dashboard

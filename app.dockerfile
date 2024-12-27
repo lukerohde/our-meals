@@ -65,7 +65,7 @@ WORKDIR /home/pyuser/app
 # Copy only what's needed from builder
 COPY --from=builder /home/pyuser/.local /home/pyuser/.local
 COPY --from=builder /home/pyuser/app/main /home/pyuser/app/main
-COPY --from=builder /home/pyuser/app/ourmenu /home/pyuser/app/ourmenu
+COPY --from=builder /home/pyuser/app/ourmeals /home/pyuser/app/ourmeals
 COPY --from=builder /home/pyuser/app/staticfiles /home/pyuser/app/staticfiles
 COPY --from=builder /home/pyuser/app/templates /home/pyuser/app/templates
 COPY --from=builder /home/pyuser/app/manage.py /home/pyuser/app/manage.py

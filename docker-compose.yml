@@ -7,11 +7,7 @@ services:
     restart: unless-stopped
     environment:
       - APP_PORT
-      - POSTGRES_DB
-      - POSTGRES_HOST
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
-      - POSTGRES_PORT
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       - REDIS_HOST
       - REDIS_PASSWORD
       - REDIS_PORT_NUMBER
@@ -35,7 +31,6 @@ services:
     environment:
       - PGDATA=/pg_data
       - POSTGRES_DB
-      - POSTGRES_HOST
       - POSTGRES_USER
       - POSTGRES_PASSWORD
     volumes:

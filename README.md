@@ -156,35 +156,29 @@ To setup completely new hosting, I purchased a domain from namecheap and configu
 
 1. Prerequisites:
    - A Render account (sign up at render.com)
-   - Your repository connected to Render
-   - Render API key (for automated deployments)
+   - Render payment method set up - Account Settings -> Billing -> Add Payment Method
+   - Render API key in your .env file: `RENDER_API_KEY=your_key_here`
+   - `jq` command-line tool installed (`brew install jq`)
 
-2. Initial Setup:
-   - Sign in to Render with your GitHub account
-   - Go to Account Settings -> API Keys -> Create API Key
-   - Add the API key to your .env file: `RENDER_API_KEY=your_key_here`
-   - In Account Settings -> Account Security, add GitHub access to Our-Meals
+2. Deployment:
+   ```bash
+   ./deploy/render-deploy
+   ```
 
-3. Deployment:
-   - The `render.yaml` file in the repository root defines your service configuration
-   - Push your changes to GitHub
-   - Render will automatically detect the `render.yaml` and create:
-     - A PostgreSQL database
-     - A web service running your Docker container
-     - Automatic SSL/TLS certificates for dev.ourmeals.online
+   This script will:
+   - Create/update services defined in render.yaml
+   - Set up PostgreSQL database
+   - Deploy your application
+   - Wait for deployment to complete
+   - Show you the deployment status
 
-4. DNS Configuration:
+3. DNS Configuration:
    - In your DNS provider, create a CNAME record:
      - Host: dev
-     - Value: your-app-name.onrender.com (you'll get this URL after first deployment)
+     - Value: your-app-name.onrender.com (get this from Render dashboard)
    - Render will automatically provision and renew SSL certificates
 
-5. Environment Variables:
-   - Most environment variables are automatically set from the database service
-   - Set any additional environment variables in the Render dashboard or `render.yaml`
-   - Sensitive values like `DJANGO_SECRET_KEY` should be set manually in the dashboard
-
-6. Monitoring and Scaling:
-   - Monitor your app in the Render dashboard
-   - Adjust number of instances in `render.yaml` or through the dashboard
-   - View logs in real-time through the Render dashboard
+4. Environment Variables:
+   - Most environment variables are automatically set from render.yaml
+   - Database connection is handled via DATABASE_URL
+   - Sensitive values like DJANGO_SECRET_KEY should be set in Render dashboard

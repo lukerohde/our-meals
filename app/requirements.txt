@@ -18,6 +18,7 @@ requests
 # openai
 # jwt
 # pillow
+dj-database-url
 
 ## django frozen at 5.1.4 - 2024-12-13
 ## pip freeze > requirements.txt
@@ -78,5 +79,3 @@ traitlets==5.14.3
 typing_extensions==4.12.2
 urllib3==2.2.3
 wcwidth==0.2.13
-
-

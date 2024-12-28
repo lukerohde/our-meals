@@ -39,6 +39,7 @@ services:
 
 databases:
   - name: our-meals-db
+    region: singapore
     postgresMajorVersion: "15"
     databaseName: our_meals
     plan: free

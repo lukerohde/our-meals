@@ -23,6 +23,7 @@ TODO
     * DONE Refactor JS
     * DONE Refactor CSS
     * Refactor views & URLs
+    * Get playwright going
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)
@@ -54,12 +55,12 @@ TODO
     * Async or streaming grocery list
 * Improve deployment
     * DONE Serve via gunicorn
-    * Multistage docker build with;
-        * build
-        * test
-        * run
+    * DONE Multistage docker build with;
+        * DONE build
+        * DONE test
+        * DONE run
     * Makefile
-    * Render deploy yaml
+    * DONE Render deploy yaml
     * Github action for test and deploy off main
 
 
@@ -157,25 +158,25 @@ To setup completely new hosting, I purchased a domain from namecheap and configu
 1. Prerequisites:
    - A Render account (sign up at render.com)
    - Render payment method set up - Account Settings -> Billing -> Add Payment Method
-   - To query Render (not needed).  Render API key in your .env file: `RENDER_API_KEY=your_key_here`
-        - `jq` command-line tool installed (`brew install jq`)
 
 2. Create a render blueprint:
-   - copy render.yaml.example to render.yaml, and check it over
+   - copy deploy-render/render.yaml.example to render.yaml, and check it over
    - In Render Dashboard;
     - +New - Blueprint
-    - Name: your-app-name (your dns cname target will be your-app-name.onrender.com)
+    - Name: your-app-name 
     - Repo: https://github.com/your-github-account/our-meals
      - Deployment Branch: your-branch-name
      - Check the results of the blueprint validation
-     - Clickity clickity
+     - finish with Clickity clickity 
 
 3. DNS Configuration:
-   - In your DNS provider, create a CNAME record:
-     - Host: dev
-     - Value: your-app-name.onrender.com (get this from Render dashboard)
+   - In your DNS hosting provider, create a CNAME record:
+     - Host: www or dev or whatever
+     - Value: your-app-name.onrender.com 
    - Render will automatically provision and renew SSL certificates
+   - make sure your render DJANGO_ALLOWED_HOSTS has both your cname and your-app-name.onrender.com (comma separated)
 
 4. Environment Variables:
    - Most environment variables are automatically set from render.yaml
    - Database connection is handled via DATABASE_URL
+   - Set secret stuff like OPENAI_API_KEY in Render dashboard

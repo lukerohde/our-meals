@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: our-meals
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./app.dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    region: singapore
+    domains: 
+      - dev.ourmeals.online
+    # repo: https://github.com/lukerohde/our-meals
+    branch: feature/scaling
+    numInstances: 1
+    # scaling: # Autoscaling configuration (not available for hobby plans)
+    #   minInstances: 1
+    #   maxInstances: 3
+    #   targetMemoryPercent: 60 # Optional if targetCPUPercent is set
+    #   targetCPUPercent: 60    # Optional if targetMemory is set
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: DJANGO_ALLOWED_HOSTS
+        value: our-meals.onrender.com,dev.ourmeals.online
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: admin
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@ourmeals.online
+      - key: DJANGO_SUPERUSER_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: our-meals-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+databases:
+  - name: our-meals-db
+    region: singapore
+    postgresMajorVersion: "15"
+    databaseName: our_meals
+    plan: free
+    ipAllowList: [] # only allow internal connections

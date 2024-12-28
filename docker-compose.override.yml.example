@@ -2,13 +2,13 @@ services:
   app:
     build:
       target: build
-      volumes:
-        - ./app:/home/pyuser/app:delegated
-        - ./.media_volume:/home/pyuser/app/media
-        - ./.packages:/home/pyuser/.local
-        - app_user:/home/pyuser # for bash history etc
-      command:
-        - ./docker-start.override
+    volumes:
+      - ./app:/home/pyuser/app:delegated
+      - ./.media_volume:/home/pyuser/app/media
+      - ./.packages:/home/pyuser/.local
+      - app_user:/home/pyuser # for bash history etc
+    command:
+      - ./docker-start.override
     ports:
       - $APP_PORT:3000
       - "1234:1234"  # Add this line for HMR
@@ -32,7 +32,7 @@ services:
       - ./.nginx:/etc/nginx/conf.d
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
-      - ./app/staticfiles:/usr/share/nginx/html/static_root
+      - ./app/collectstatic:/usr/share/nginx/html/static_root
       - ./app/templates/errors:/usr/share/nginx/html/errors
       #- ./app/.collectstatic/media_root:/usr/share/nginx/html/media_root
     ports:

@@ -14,7 +14,7 @@ backup/
 .certbot
 .nginx
 .tmp
-app/staticfiles
+app/collectstatic
 .DS_Store
 node_modules
 app/ai_helpers.log

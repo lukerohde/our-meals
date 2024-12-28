@@ -66,7 +66,7 @@ WORKDIR /home/pyuser/app
 COPY --from=builder /home/pyuser/.local /home/pyuser/.local
 COPY --from=builder /home/pyuser/app/main /home/pyuser/app/main
 COPY --from=builder /home/pyuser/app/ourmeals /home/pyuser/app/ourmeals
-COPY --from=builder /home/pyuser/app/staticfiles /home/pyuser/app/staticfiles
+COPY --from=builder /home/pyuser/app/collectstatic /home/pyuser/app/collectstatic
 COPY --from=builder /home/pyuser/app/templates /home/pyuser/app/templates
 COPY --from=builder /home/pyuser/app/manage.py /home/pyuser/app/manage.py
 

@@ -81,7 +81,7 @@ echo "Collecting files"
 docker-compose run --rm app "/bin/bash" -c "/home/pyuser/app/manage.py collectstatic --no-input"
 
 echo "Copying static files"
-rsync -auv app/staticfiles/ $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/app/staticfiles/
+rsync -auv app/collectstatic/ $DIGITAL_OCEAN_APP_USER@$DROPLET_IP:/home/$DIGITAL_OCEAN_APP_USER/src/app/staticfiles/
 
 echo Browse to either;
 echo - http://$DROPLET_IP:$APP_PORT

@@ -13,7 +13,7 @@ services:
       - ./.nginx:/etc/nginx/conf.d
       - ./.certbot/certs:/etc/letsencrypt
       - ./.certbot/challenge:/var/www/certbot
-      - ./app/staticfiles:/usr/share/nginx/html/static_root
+      - ./app/collectstatic:/usr/share/nginx/html/static_root
       - ./app/templates/errors:/usr/share/nginx/html/errors
       #- ./app/.collectstatic/media_root:/usr/share/nginx/html/media_root
     ports:

@@ -19,6 +19,7 @@ requests
 # jwt
 # pillow
 dj-database-url
+whitenoise
 
 ## django frozen at 5.1.4 - 2024-12-13
 ## pip freeze > requirements.txt

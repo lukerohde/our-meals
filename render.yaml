@@ -36,13 +36,6 @@ services:
         fromDatabase:
           name: our-meals-db
           property: connectionString
-    buildCommand: docker build -t our-meals --target production .
-    dockerCommand: >
-      /bin/sh -c '
-      python manage.py migrate &&
-      python manage.py createsuperuser --noinput || true &&
-      gunicorn ourmeals.wsgi:application --bind 0.0.0.0:${PORT:-3000} --workers 3
-      '
 
 databases:
   - name: our-meals-db

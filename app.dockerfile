@@ -82,5 +82,15 @@ RUN apt-get update && apt-get install -y \
 USER pyuser
 EXPOSE 3000/tcp
 
-# Run with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:${PORT:-3000}", "our_meals.wsgi:application"]
+# Create startup script
+COPY --chown=pyuser:pyuser <<EOF /home/pyuser/app/start.sh
+#!/bin/bash
+python manage.py migrate
+python manage.py createsuperuser --noinput || true
+exec gunicorn ourmeals.wsgi:application --bind 0.0.0.0:${PORT:-3000} --workers 3
+EOF
+
+RUN chmod +x /home/pyuser/app/start.sh
+
+# Use the startup script
+CMD ["/home/pyuser/app/start.sh"]

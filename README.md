@@ -164,8 +164,8 @@ To setup completely new hosting, I purchased a domain from namecheap and configu
    - copy render.yaml.example to render.yaml, and check it over
    - In Render Dashboard;
     - +New - Blueprint
-    - Name: your-app-name
-    - Repo: https://github.com/our-meals/our-meals
+    - Name: your-app-name (your dns cname target will be your-app-name.onrender.com)
+    - Repo: https://github.com/your-github-account/our-meals
      - Deployment Branch: your-branch-name
      - Check the results of the blueprint validation
      - Clickity clickity

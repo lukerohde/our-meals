@@ -80,6 +80,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 USER pyuser
+EXPOSE 3000/tcp
 
 # Run with gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:3000", "our_meals.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:${PORT:-3000}", "our_meals.wsgi:application"]

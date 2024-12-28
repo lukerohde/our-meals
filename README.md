@@ -157,20 +157,18 @@ To setup completely new hosting, I purchased a domain from namecheap and configu
 1. Prerequisites:
    - A Render account (sign up at render.com)
    - Render payment method set up - Account Settings -> Billing -> Add Payment Method
-   - Render API key in your .env file: `RENDER_API_KEY=your_key_here`
-   - `jq` command-line tool installed (`brew install jq`)
+   - To query Render (not needed).  Render API key in your .env file: `RENDER_API_KEY=your_key_here`
+        - `jq` command-line tool installed (`brew install jq`)
 
-2. Deployment:
-   ```bash
-   ./deploy/render-deploy
-   ```
-
-   This script will:
-   - Create/update services defined in render.yaml
-   - Set up PostgreSQL database
-   - Deploy your application
-   - Wait for deployment to complete
-   - Show you the deployment status
+2. Create a render blueprint:
+   - copy render.yaml.example to render.yaml, and check it over
+   - In Render Dashboard;
+    - +New - Blueprint
+    - Name: your-app-name
+    - Repo: https://github.com/our-meals/our-meals
+     - Deployment Branch: your-branch-name
+     - Check the results of the blueprint validation
+     - Clickity clickity
 
 3. DNS Configuration:
    - In your DNS provider, create a CNAME record:
@@ -181,4 +179,3 @@ To setup completely new hosting, I purchased a domain from namecheap and configu
 4. Environment Variables:
    - Most environment variables are automatically set from render.yaml
    - Database connection is handled via DATABASE_URL
-   - Sensitive values like DJANGO_SECRET_KEY should be set in Render dashboard

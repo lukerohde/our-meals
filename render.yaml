@@ -1,15 +1,25 @@
 services:
   - type: web
     name: our-meals
-    env: docker
+    runtime: docker
+    plan: starter
     dockerfilePath: ./app.dockerfile
     dockerContext: .
-    targetPort: 3000
-    numInstances: 1
     healthCheckPath: /
     region: singapore
-    domains: dev.ourmeals.online
+    domains: 
+      - dev.ourmeals.online
+    # repo: https://github.com/lukerohde/our-meals
+    branch: feature/scaling
+    numInstances: 1
+    # scaling: # Autoscaling configuration (not available for hobby plans)
+    #   minInstances: 1
+    #   maxInstances: 3
+    #   targetMemoryPercent: 60 # Optional if targetCPUPercent is set
+    #   targetCPUPercent: 60    # Optional if targetMemory is set
     envVars:
+      - key: PORT
+        value: "3000"
       - key: DJANGO_DEBUG
         value: "0"
       - key: DJANGO_ALLOWED_HOSTS
@@ -27,15 +37,16 @@ services:
           name: our-meals-db
           property: connectionString
     buildCommand: docker build -t our-meals --target production .
-    startCommand: >
+    dockerCommand: >
       /bin/sh -c '
       python manage.py migrate &&
       python manage.py createsuperuser --noinput || true &&
-      gunicorn ourmeals.wsgi:application --bind 0.0.0.0:3000 --workers 3
+      gunicorn ourmeals.wsgi:application --bind 0.0.0.0:${PORT:-3000} --workers 3
       '
 
 databases:
   - name: our-meals-db
+    postgresMajorVersion: "15"
     databaseName: our_meals
     plan: free
     ipAllowList: [] # only allow internal connections

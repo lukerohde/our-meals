@@ -36,7 +36,8 @@ services:
         fromDatabase:
           name: our-meals-db
           property: connectionString
-
+      - key: OPENAI_API_KEY
+        sync: false
 databases:
   - name: our-meals-db
     region: singapore

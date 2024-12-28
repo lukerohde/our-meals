@@ -1,8 +1,3 @@
-ipdb
-# console stuff
-click
-requests
-
 # unfrozen django stuff
 # psycopg2
 # Django
@@ -18,8 +13,8 @@ requests
 # openai
 # jwt
 # pillow
-dj-database-url
-whitenoise
+# dj-database-url
+# whitenoise
 
 ## django frozen at 5.1.4 - 2024-12-13
 ## pip freeze > requirements.txt
@@ -37,6 +32,7 @@ click==8.1.7
 cryptography==44.0.0
 decorator==5.1.1
 distro==1.9.0
+dj-database-url==2.3.0
 Django==5.1.4
 django-allauth==65.3.0
 django-filter==24.3
@@ -80,3 +76,4 @@ traitlets==5.14.3
 typing_extensions==4.12.2
 urllib3==2.2.3
 wcwidth==0.2.13
+whitenoise==6.8.2

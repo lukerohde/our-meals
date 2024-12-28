@@ -1,7 +1,7 @@
 services:
   app:
     build:
-      target: build
+      target: test
     volumes:
       - ./app:/home/pyuser/app:delegated
       - ./.media_volume:/home/pyuser/app/media

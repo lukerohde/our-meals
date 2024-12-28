@@ -92,7 +92,7 @@ docker-compose logs
 
 Shell into the python app container
 ```
-docker-compose exec app /bin/bash
+docker-compose exec app /bin/sh
 ```
 
 To make typing these commands less tedious it helps to have docker aliases in your .bash_profile or similar

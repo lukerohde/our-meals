@@ -23,7 +23,7 @@ services:
       - key: DJANGO_DEBUG
         value: "0"
       - key: DJANGO_ALLOWED_HOSTS
-        value: our-meals.onrender.com
+        value: our-meals.onrender.com,dev.ourmeals.online
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_SUPERUSER_USERNAME

@@ -42,7 +42,6 @@ RUN python${PYTHON_VERSION} -m pip install --user --no-cache-dir -r requirements
 
 # Copy package files and install dependencies
 COPY --chown=pyuser:pyuser ./app/package*.json ./
-COPY --chown=pyuser:pyuser ./app/.npmrc ./
 RUN npm install
 
 # Copy the rest of the application code

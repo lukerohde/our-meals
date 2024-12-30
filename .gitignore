@@ -10,6 +10,7 @@ __pycache__
 
 # deployment stuff
 .digital_ocean_env
+.render_db_env
 backup/
 .certbot
 .nginx

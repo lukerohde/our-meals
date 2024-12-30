@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# Check if .env exists and source it
+if [ ! -f ".env" ]; then
+    echo "Error: .env file not found!"
+    echo "Please create a .env file with your Render API key (RENDER_API_KEY=your_key_here)"
+    exit 1
+fi
+
+source .env
+
+# Get database ID from config
+DB_ID=$(curl -s \
+    -H "Authorization: Bearer ${RENDER_API_KEY}" \
+    "https://api.render.com/v1/postgres" | jq -r '.[0].postgres.id')
+
+if [ -z "$DB_ID" ]; then
+    echo "Error: Could not find database ID"
+    exit 1
+fi
+
+# Function to get current IP
+get_current_ip() {
+    curl -s https://api.ipify.org
+}
+
+# Function to get current allowlist
+get_allowlist() {
+    curl -s \
+        -H "Authorization: Bearer ${RENDER_API_KEY}" \
+        "https://api.render.com/v1/postgres/$DB_ID" | jq -r '.ipAllowList'
+}
+
+# Function to add IP to allowlist
+add_ip() {
+    local ip=$1
+    local description="Added via CLI"
+    local current_list=$(get_allowlist)
+    local new_list=$(echo "$current_list" | jq '. + [{"cidrBlock": "'"$ip"'/32", "description": "'"$description"'"}]')
+    
+    echo "Adding IP $ip to allowlist..."
+    curl -s \
+        -X PATCH \
+        -H "Authorization: Bearer ${RENDER_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"ipAllowList\": $new_list}" \
+        "https://api.render.com/v1/postgres/$DB_ID" > /dev/null
+}
+
+# Function to remove IP from allowlist
+remove_ip() {
+    local ip=$1
+    local current_list=$(get_allowlist)
+    local new_list=$(echo "$current_list" | jq '[.[] | select(.cidrBlock != "'"$ip"'/32")]')
+    
+    echo "Removing IP $ip from allowlist..."
+    curl -s \
+        -X PATCH \
+        -H "Authorization: Bearer ${RENDER_API_KEY}" \
+        -H "Content-Type: application/json" \
+        -d "{\"ipAllowList\": $new_list}" \
+        "https://api.render.com/v1/postgres/$DB_ID" > /dev/null
+}
+
+# Function to list current allowlist
+list_ips() {
+    local current_list=$(get_allowlist)
+    echo "$current_list" | jq -r '.[] | .cidrBlock + " - " + .description'
+}
+
+# Get action and IP address
+action=$1
+ip=${2:-$(get_current_ip)}
+
+case $action in
+    "add")
+        add_ip "$ip"
+        echo "IP $ip added to allowlist"
+        ;;
+    "remove")
+        remove_ip "$ip"
+        echo "IP $ip removed from allowlist"
+        ;;
+    "list")
+        echo "Current IP allowlist:"
+        list_ips
+        ;;
+    *)
+        echo "Usage: $0 [add|remove|list] [ip_address]"
+        echo "If no IP is specified, your current IP will be used"
+        exit 1
+        ;;
+esac

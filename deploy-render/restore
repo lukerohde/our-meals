@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Get database config if it doesn't exist
+if [ ! -f "./.render_db_env" ]; then
+    echo "Database config not found, fetching..."
+    ./deploy-render/get-db-config
+fi
+
+# Source the database configuration
+. ./.render_db_env
+
+backup_file=${1:-"backup/backup_latest.sql"}
+
+if [ ! -f "${backup_file}" ]; then
+    echo "Error: Backup file ${backup_file} not found!"
+    echo "Usage: $0 [backup_file]"
+    echo "If no backup file is specified, will try to use backup/backup_latest.sql"
+    exit 1
+fi
+
+# Add current IP to allowlist
+echo "Adding current IP to allowlist..."
+./deploy-render/manage-db-allowlist add
+
+# Restore database using app container
+echo "Restoring database from ${backup_file}..."
+docker compose exec -T app \
+    psql "${DATABASE_URL}" < "${backup_file}"
+
+RESTORE_STATUS=$?
+
+# Remove IP from allowlist
+echo "Removing IP from allowlist..."
+./deploy-render/manage-db-allowlist remove
+
+if [ $RESTORE_STATUS -eq 0 ]; then
+    echo "Database restore completed successfully!"
+else
+    echo "Database restore failed!"
+    exit 1
+fi

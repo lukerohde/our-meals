@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Get database config if it doesn't exist
+if [ ! -f "./.render_db_env" ]; then
+    echo "Database config not found, fetching..."
+    ./deploy-render/get-db-config
+fi
+
+# Source the database configuration
+. ./.render_db_env
+
+# Add current IP to allowlist
+echo "Adding current IP to allowlist..."
+./deploy-render/manage-db-allowlist add
+
+# Get the current date for the backup filename
+current_date=$(date +%Y-%m-%d)
+local_backup_dir=./backup
+
+# Create backup directory if it doesn't exist
+mkdir -p "${local_backup_dir}"
+
+# Create backup using app container
+echo "Creating backup of Render database..."
+docker compose exec -T app \
+    pg_dump "${DATABASE_URL}" --clean --if-exists > "${local_backup_dir}/backup_${current_date}.sql"
+
+BACKUP_STATUS=$?
+
+if [ $BACKUP_STATUS -eq 0 ]; then
+    echo "Backup completed successfully: ${local_backup_dir}/backup_${current_date}.sql"
+    
+    # Create/Update the latest backup symlink
+    rm -f "${local_backup_dir}/backup_latest.sql"
+    ln -s "backup_${current_date}.sql" "${local_backup_dir}/backup_latest.sql"
+    
+    echo "Updated latest backup symlink"
+else
+    echo "Backup failed!"
+fi
+
+# Remove IP from allowlist
+echo "Removing IP from allowlist..."
+./deploy-render/manage-db-allowlist remove
+
+[ $BACKUP_STATUS -eq 0 ] || exit 1

@@ -8,9 +8,11 @@ services:
     healthCheckPath: /
     region: singapore
     domains: 
+      - ourmeals.online
+      - www.ourmeals.online
       - dev.ourmeals.online
     # repo: https://github.com/lukerohde/our-meals
-    branch: feature/scaling
+    branch: main
     numInstances: 1
     # scaling: # Autoscaling configuration (not available for hobby plans)
     #   minInstances: 1
@@ -23,7 +25,7 @@ services:
       - key: DJANGO_DEBUG
         value: "0"
       - key: DJANGO_ALLOWED_HOSTS
-        value: our-meals.onrender.com,dev.ourmeals.online
+        value: our-meals.onrender.com,ourmeals.online,www.ourmeals.online,dev.ourmeals.online
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_SUPERUSER_USERNAME

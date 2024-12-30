@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Check if .env exists and source it
+if [ ! -f ".env" ]; then
+    echo "Error: .env file not found!"
+    echo "Please create a .env file with your Render API key (RENDER_API_KEY=your_key_here)"
+    exit 1
+fi
+
+source .env
+
+# Get database info
+DB_INFO=$(curl -s \
+    -H "Authorization: Bearer ${RENDER_API_KEY}" \
+    "https://api.render.com/v1/postgres")
+
+# Extract database ID (note the nested postgres key)
+DB_ID=$(echo $DB_INFO | jq -r '.[0].postgres.id')
+DB_NAME=$(echo $DB_INFO | jq -r '.[0].postgres.databaseName')
+DB_USER=$(echo $DB_INFO | jq -r '.[0].postgres.databaseUser')
+
+if [ -z "$DB_ID" ]; then
+    echo "Error: Could not find database ID"
+    exit 1
+fi
+
+# Get specific database connection info
+DB_CONN_INFO=$(curl -s \
+    -H "Authorization: Bearer ${RENDER_API_KEY}" \
+    "https://api.render.com/v1/postgres/${DB_ID}/connection-info")
+
+# Extract connection details
+DB_CONN_STRING=$(echo $DB_CONN_INFO | jq -r '.externalConnectionString')
+DB_HOST=$(echo $DB_CONN_STRING | sed -n 's/.*@\([^:]*\).*/\1/p')
+DB_PASSWORD=$(echo $DB_CONN_INFO | jq -r '.password')
+
+# Output the configuration
+cat << EOF > .render_db_env
+PG_HOST=$DB_HOST
+PG_USER=$DB_USER
+PG_DB=$DB_NAME
+PG_PORT=5432
+PG_PASSWORD=$DB_PASSWORD
+DATABASE_URL="$DB_CONN_STRING"
+EOF
+
+echo "Database configuration saved to .render_db_env"

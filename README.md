@@ -123,60 +123,15 @@ To simulate production running via gunicorn and nginx on localhost port 80
 docker compose exec app gunicorn ourmeals wsgi:application --bind 0.0.0.0:3000 --workers 3 --chdir .
 ```
 
+## Database Operations
+
+For database backup, restore, and migration instructions:
+- Render: See [deploy-render/README.md](deploy-render/README.md)
+- Digital Ocean: See [deploy-do/README.md](deploy-do/README.md)
+
 # Deployment Instructions
-## Deploying to Digital Ocean Droplet
 
-To deploy to digital ocean you'll need doctl installed as a prerequisite.
+For more detailed instructions, please refer to the following README files:
 
-On mac, `brew install doctl`
-
-Then you'll need to config it with your digital ocean token. 
-
-`doctl auth init`
-
-In the deploy directory there are a number of scripts to help you get into production.  You run them from the parent directory.
-
-* `deploy/go` will do everything
-* `deploy/01-build-server` will make a digital ocean server and set `.digital_ocean_env` so your other scripts will work
-* `deploy/02-config-server` this does everything to pave the road for deployment such as installing software and creating a non root user
-* `deploy/03-deploy-repo` this will clone the repo in and copy up the env files mentioned below, then fire up docker compose 
-* `deploy/userlogin` a shortcut for logging into the server
-* `deploy/rootlogin` I should probably kill this
-* `deploy/backup` take a copy of the production database
-* `deploy/restore` restores the latest backup
-* `deploy/cleanup` destroys the digital ocean server
-
-If you are using the digital ocean deploy scripts in /deploy, there are two files you'll need;
-
-* `.env-prod` for production configuration (same as .env unless you have different prod config)
-* `.docker-compose-override.yml.prod` which open the app port
-
-To setup completely new hosting, I purchased a domain from namecheap and configured custom dns pointing to digital ocean's nameservers - ns1.digitalocean.com, ns2.digitalocean.com, ns3.digitalocean.com (don't forgot to click the tick!).  I created a new project in digital ocean just to group the server and domain.  I added my new mac's public ssh key to my digital ocean team.   I think this key is used in two ways.  First to avoid needing to config doctl with a token and provide it all the time, automating the deployment script.  It is also added to the server by the deployment script for passwordless sign in.  I updated the .env-prod with domain name I purchased, and my ssh key name and public key.  I click-ops'd a dns domain/zone in digital ocean, but I think the deploy script would have done that for me. After that it was just a matter of running the deploy script.  Because I failed to save the custom dns settings, certbot was failing because it reach my server to download the challenge file.  Waiting for DNS propergation is fun.  I also had a bunch of troubles because I was missing the .nginx, .certbot directories resulting in them having root permissions.
-
-## Deploying to Render
-
-1. Prerequisites:
-   - A Render account (sign up at render.com)
-   - Render payment method set up - Account Settings -> Billing -> Add Payment Method
-
-2. Create a render blueprint:
-   - copy deploy-render/render.yaml.example to render.yaml, and check it over
-   - In Render Dashboard;
-    - +New - Blueprint
-    - Name: your-app-name 
-    - Repo: https://github.com/your-github-account/our-meals
-     - Deployment Branch: your-branch-name
-     - Check the results of the blueprint validation
-     - finish with Clickity clickity 
-
-3. DNS Configuration:
-   - In your DNS hosting provider, create a CNAME record:
-     - Host: www or dev or whatever
-     - Value: your-app-name.onrender.com 
-   - Render will automatically provision and renew SSL certificates
-   - make sure your render DJANGO_ALLOWED_HOSTS has both your cname and your-app-name.onrender.com (comma separated)
-
-4. Environment Variables:
-   - Most environment variables are automatically set from render.yaml
-   - Database connection is handled via DATABASE_URL
-   - Set secret stuff like OPENAI_API_KEY in Render dashboard
+- [Deploy to Render](deploy-render/README.md)
+- [Deploy to Digital Ocean](deploy-do/README.md)

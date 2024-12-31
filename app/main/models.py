@@ -53,7 +53,7 @@ class Recipe(models.Model):
 class Ingredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name='ingredients')
     name = models.CharField(max_length=255)
-    amount = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    amount = models.CharField(max_length=50, null=True, blank=True)
     unit = models.CharField(max_length=50)
 
     def __str__(self):

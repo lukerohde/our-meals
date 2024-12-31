@@ -1,4 +1,9 @@
 def convert_to_grams(amount, unit, region='US'):
+    try:
+        amount = float(amount)
+    except (ValueError, TypeError):
+        return None
+        
     conversion_factors = {
         'US': {
             'cup': 240,  # grams per cup
@@ -13,4 +18,4 @@ def convert_to_grams(amount, unit, region='US'):
     factor = factors.get(unit.lower())
     if factor:
         return amount * factor
-    return amount  # Return original amount if unit not found 
+    return amount  # Return original amount if unit not found

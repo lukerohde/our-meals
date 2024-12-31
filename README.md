@@ -44,6 +44,7 @@ TODO
     * Import from pdf 
     * Convert ingredients to region
     * Better handle odd units (to taste, one piece of egg)
+    * https://cookieandkate.com/classic-french-75-cocktail-recipe/
 * Improve Nav
     * DONE Get to collections from meal plan
     * DONE Meal plan is more prominent

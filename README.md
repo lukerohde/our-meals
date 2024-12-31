@@ -44,7 +44,8 @@ TODO
     * Import from pdf 
     * Convert ingredients to region
     * Better handle odd units (to taste, one piece of egg)
-    * https://cookieandkate.com/classic-french-75-cocktail-recipe/
+    * DONE fix https://cookieandkate.com/classic-french-75-cocktail-recipe/
+    * Dan murphy's gives me random recipes??? https://www.danmurphys.com.au/dans-daily/cocktails/elderflower-martini-cocktail-recipe
 * Improve Nav
     * DONE Get to collections from meal plan
     * DONE Meal plan is more prominent

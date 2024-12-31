@@ -85,8 +85,28 @@ def parse_recipe_with_genai(raw_text):
         return None 
 
 def summarize_grocery_list_with_genai(ingredients, grocery_list_instruction):
-    # Combine ingredients into a single string
-    combined_ingredients = ', '.join([ingredient.name for ingredient in ingredients])
+    # Create a structured list of ingredients with amounts and context
+    ingredient_details = []
+    for ingredient in ingredients:
+        recipe = ingredient.recipe
+        meal = recipe.meal
+        detail = {
+            'ingredient': ingredient.name,
+            'amount': f"{ingredient.amount or ''} {ingredient.unit}".strip(),
+            'recipe': recipe.title,
+            'meal': meal.title
+        }
+        ingredient_details.append(detail)
+    
+    # Sort ingredients alphabetically
+    ingredient_details.sort(key=lambda x: x['ingredient'].lower())
+    
+    # Convert to CSV-style string for better readability
+    formatted_ingredients = "Ingredient, Amount, Recipe, Meal\n"
+    formatted_ingredients += "\n".join(
+        f"{detail['ingredient']}, {detail['amount']}, {detail['recipe']}, {detail['meal']}"
+        for detail in ingredient_details
+    )
 
     client = OpenAI(
         api_key=os.getenv('OPENAI_API_KEY')
@@ -94,12 +114,15 @@ def summarize_grocery_list_with_genai(ingredients, grocery_list_instruction):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": f"Organize the following ingredients into a sensible shopping list grouped by supermarket sections. {grocery_list_instruction}"},
-            {"role": "user", "content": combined_ingredients}
+            {"role": "system", "content": f"""Organize the following ingredients into a sensible shopping list grouped by supermarket sections. 
+The input is in CSV format with columns: Ingredient, Amount, Recipe, Meal.
+The ingredients are pre-sorted alphabetically to help identify similar items.
+Please consolidate similar ingredients and their amounts when possible.
+{grocery_list_instruction}"""},
+            {"role": "user", "content": formatted_ingredients}
         ]
     )
     response_text = response.choices[0].message.content
-    
     return response_text
 
 

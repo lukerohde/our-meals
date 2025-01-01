@@ -3,19 +3,27 @@
 A totally unnessary django app to manage our menu - it uses GenAI to scrape recipes and manipulate menus.    I should contributed Mealie instead.
 
 TODO
-* Edit a meal
-* DONE AI instruction for meal scraping
-* DONE Edit a meal plan - change its name
-* DONE Delete a meal
-* Delete a collection
-* Account settings w/Set region
-* DONE Add to meal plan
-* DONE Share meal plan with friends
-* DONE Show shopping list
-* DONE Share meal collection with friends?
-* Import and display pictures
-* DONE Accept a family invite
-* DONE Invite a family member
+* Features
+    * Edit a meal
+    * DONE AI instruction for meal scraping
+    * DONE Edit a meal plan - change its name
+    * DONE Delete a meal
+    * Delete a collection
+    * Account settings w/Set region
+    * DONE Add to meal plan
+    * DONE Share meal plan with friends
+    * DONE Show shopping list
+    * DONE Share meal collection with friends?
+    * Import and display pictures
+    * DONE Accept a family invite
+    * DONE Invite a family member
+    * Suggest and search for meals 
+        * Cookbooks
+        * Online
+    * Set goals
+        * Prioritise meals by goals
+        * Rate meals against goals
+    * Order groceries online
 * Improve code
     * Tests!! 
     * Refactor scrapping - that's super ugly

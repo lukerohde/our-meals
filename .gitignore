@@ -36,3 +36,8 @@ yarn-error.log*
 # Test coverage
 app/coverage/
 .nyc_output/
+
+# Playwright
+app/test-results/
+app/playwright
+app/playwright-report

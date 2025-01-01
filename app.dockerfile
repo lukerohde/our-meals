@@ -1,3 +1,4 @@
+#########################################
 # Build stage
 FROM python:3.11-alpine AS builder
 
@@ -13,7 +14,8 @@ RUN apk add --no-cache \
     make \
     musl-dev \
     libffi-dev \
-    npm
+    npm \
+    sudo
 
 # Install latest npm
 RUN npm install -g npm@latest
@@ -35,10 +37,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /home/pyuser/app
 
+USER pyuser
 # Copy Python requirements and install
 COPY --chown=pyuser:pyuser ./app/requirements.txt ./
-USER pyuser
-RUN python${PYTHON_VERSION} -m pip install --user --no-cache-dir -r requirements.txt
+RUN python -m pip install --user --no-cache-dir -r requirements.txt
 
 # Copy package files and install dependencies
 COPY --chown=pyuser:pyuser ./app/package*.json ./
@@ -51,22 +53,48 @@ COPY --chown=pyuser:pyuser ./app/ ./
 RUN npm run build
 RUN python manage.py collectstatic --noinput
 
+#########################################
 # Test stage
 FROM builder AS test
-# This stage will be used for running tests
-# Placeholder for future test setup with playwright and jest
-RUN echo "Test stage - to be implemented with playwright and jest"
-RUN python${PYTHON_VERSION} -m pip install --user ipdb
 
-# Add sudo capability for npm global installs
+# Install system dependencies for Playwright
 USER root
-RUN apk add --no-cache sudo && \
-    echo "pyuser ALL=(ALL) NOPASSWD: /usr/local/bin/npm" >> /etc/sudoers
+RUN apk add --no-cache \
+    libstdc++ \
+    chromium \
+    chromium-chromedriver \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ttf-freefont \
+    font-noto-emoji \
+    ffmpeg 
 
+# Create symlink for ffmpeg in the expected location
+RUN mkdir -p /usr/lib/chromium/ffmpeg-1010 && \
+    ln -s /usr/bin/ffmpeg /usr/lib/chromium/ffmpeg-1010/ffmpeg-linux && \
+    chmod -R 777 /usr/lib/chromium
+
+# Switch to pyuser for remaining operations
 USER pyuser
-# Make sure npm is available in PATH for test stage
-ENV PATH="/usr/local/bin:/usr/bin:/bin:/home/pyuser/.local/bin:/usr/local/lib/node_modules/npm/bin:${PATH}"
 
+# Install Playwright browsers - needed for recording
+RUN npx playwright install chromium
+
+# Set environment variables for test stage
+ENV CHROME_BIN=/usr/bin/chromium-browser \
+    CHROME_PATH=/usr/lib/chromium/ \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0 \
+    PLAYWRIGHT_BROWSERS_PATH=/usr/lib/chromium \
+    FLASK_ENV=development \
+    FLASK_DEBUG=1 \
+    PATH="/usr/local/bin:/usr/bin:/bin:/home/pyuser/.local/bin:/usr/local/lib/node_modules/npm/bin:${PATH}"
+
+# Install Python debug tools 
+RUN python -m pip install --user ipdb
+
+#########################################
 # Production stage
 FROM python:3.11-alpine AS production
 
@@ -83,6 +111,7 @@ COPY --from=builder /home/pyuser/app/ourmeals /home/pyuser/app/ourmeals
 COPY --from=builder /home/pyuser/app/collectstatic /home/pyuser/app/collectstatic
 COPY --from=builder /home/pyuser/app/templates /home/pyuser/app/templates
 COPY --from=builder /home/pyuser/app/manage.py /home/pyuser/app/manage.py
+COPY --from=builder /home/pyuser/app/start /home/pyuser/app/start
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -92,15 +121,5 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 USER pyuser
 EXPOSE 3000/tcp
 
-# Create startup script
-COPY --chown=pyuser:pyuser <<EOF /home/pyuser/app/start.sh
-#!/bin/sh
-python manage.py migrate
-python manage.py createsuperuser --noinput || true
-exec gunicorn ourmeals.wsgi:application --bind 0.0.0.0:${PORT:-3000} --workers 3
-EOF
-
-RUN chmod +x /home/pyuser/app/start.sh
-
 # Use the startup script
-CMD ["/home/pyuser/app/start.sh"]
+CMD ["/home/pyuser/app/start"]

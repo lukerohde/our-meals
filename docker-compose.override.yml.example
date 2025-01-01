@@ -7,13 +7,19 @@ services:
       - ./.media_volume:/home/pyuser/app/media
       - ./.packages:/home/pyuser/.local
       - app_user:/home/pyuser # for bash history etc
+      - /tmp/.X11-unix:/tmp/.X11-unix
     command:
-      - ./docker-start.override
+      - ./start.override
     ports:
       - $APP_PORT:3000
       - "1234:1234"  # Add this line for HMR
+      - "9323:9323"  # Playwright UI port
     networks:
       - development
+    environment:
+      - PLAYWRIGHT_HTML_HOST=0.0.0.0
+      - PLAYWRIGHT_HTML_PORT=9323
+      - DISPLAY=host.docker.internal:0
   pg:
     ports:
       - $POSTGRES_PORT:5432

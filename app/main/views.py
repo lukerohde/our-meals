@@ -12,16 +12,19 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 import logging
 from collections import defaultdict
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http404
 from django.urls import reverse
 from django.template.loader import render_to_string
+from django.db.models import Count, Q
 
 # Configure logger
 logger = logging.getLogger(__name__)
 
 def get_possessive_name(name):
-    """Returns the possessive form of a name, handling 's' endings correctly."""
-    return f"{name}'" if name.endswith('s') else f"{name}'s"
+    """Convert a name to its possessive form."""
+    if name.endswith('s'):
+        return f"{name}'"
+    return f"{name}'s"
 
 # @login_required
 # def collection_list(request):
@@ -35,17 +38,16 @@ def latest_meal_plan(request):
 
 @login_required
 def collection_list(request):
-    meal_plan = latest_meal_plan(request)
+    # Get all meal plans where the user is a member
+    user_meal_plans = MealPlan.objects.filter(memberships__user=request.user)
     
-    if meal_plan:
-        # Get members of the latest meal plan excluding the current user
-        members = Membership.objects.filter(meal_plan=meal_plan).exclude(user=request.user).select_related('user')
-        
-        # Get collections of all members
-        member_collections = Collection.objects.filter(user__in=[membership.user for membership in members])
-    else:
-        members = []
-        member_collections = Collection.objects.none()
+    # Get all users who share any meal plan with the current user
+    shared_users = User.objects.filter(
+        memberships__meal_plan__in=user_meal_plans
+    ).distinct().exclude(id=request.user.id)
+    
+    # Get the latest meal plan for member removal context
+    meal_plan = latest_meal_plan(request)
     
     # Group collections by owner with additional member info
     grouped_collections = {}
@@ -56,11 +58,11 @@ def collection_list(request):
         'member_id': None
     }
     
-    # Add collections from meal plan members
-    for membership in members:
-        grouped_collections[f"{get_possessive_name(membership.user.username.title())} Cook Books"] = {
-            'collections': Collection.objects.filter(user=membership.user),
-            'member_id': membership.user.id
+    # Add collections from users who share any meal plan
+    for shared_user in shared_users:
+        grouped_collections[f"{get_possessive_name(shared_user.username.title())} Cook Books"] = {
+            'collections': Collection.objects.filter(user=shared_user),
+            'member_id': shared_user.id
         }
     
     context = {
@@ -182,6 +184,18 @@ def scrape_recipe(request):
 def collection_detail(request, pk):
     collection = get_object_or_404(Collection, pk=pk)
     
+    # Check if user owns the collection or shares any meal plan with the collection owner
+    if collection.user != request.user:
+        # Get all meal plans where both users are members
+        shared_meal_plans = MealPlan.objects.filter(
+            memberships__user__in=[request.user, collection.user]
+        ).annotate(
+            member_count=Count('memberships__user', distinct=True)
+        ).filter(member_count=2).exists()
+        
+        if not shared_meal_plans:
+            raise Http404("Collection not found")
+    
     meal_plan = latest_meal_plan(request)
     meal_plan_recipes = meal_plan.meals.values_list('id', flat=True) if meal_plan else []
 
@@ -196,13 +210,6 @@ def collection_detail(request, pk):
 def meal_detail(request, pk):
     """
     Display the details of a specific Meal, including its Recipes.
-    
-    Parameters:
-        request (HttpRequest): The HTTP request object.
-        pk (int): The primary key of the Meal.
-        
-    Returns:
-        HttpResponse: Rendered meal_detail.html template.
     """
     meal = get_object_or_404(Meal, pk=pk)
     recipes = meal.recipes.all()

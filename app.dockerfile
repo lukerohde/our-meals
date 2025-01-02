@@ -1,110 +1,99 @@
 #########################################
-# Build stage
-FROM python:3.11-alpine AS builder
+# 1) BUILDER stage (Debian-based)
+#    - Installs production Python deps
+#    - Installs Node + npm, runs npm build
+#    - Collects static files
+FROM python:3.11-slim-bullseye AS devtest
 
-# Install system dependencies
-RUN apk add --no-cache \
-    python3-dev \
-    postgresql-dev \
-    postgresql-client \
-    ca-certificates \
-    curl \
-    gcc \
-    g++ \
-    make \
-    musl-dev \
+# Install system packages needed for building + node + postgres client libs etc.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     libffi-dev \
-    npm \
-    sudo
+    libpq-dev \
+    curl \
+    ca-certificates \
+    sudo \
+    gnupg \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install latest npm
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+&& apt-get install -y nodejs
+
+# (Optional) Upgrade npm if you want:
 RUN npm install -g npm@latest
 
-# Create and switch to a non-root user
-RUN adduser -D pyuser && \
-    mkdir -p /home/pyuser/.local/lib/python3.11/site-packages && \
-    mkdir -p /home/pyuser/.local/bin && \
-    mkdir -p /home/pyuser/app/node_modules && \
-    chown -R pyuser:pyuser /home/pyuser
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libnss3 \
+    libgtk-3-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxi6 \
+    libxdamage1 \
+    libxrandr2 \
+    libasound2 \
+    fonts-liberation \
+    fonts-noto-color-emoji \
+    chromium \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user, and app directory
+RUN useradd -m pyuser
+
+WORKDIR /home/pyuser/app
+RUN chown -R pyuser:pyuser /home/pyuser/app
+USER pyuser
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH="/home/pyuser/.local/lib/python3.11/site-packages:${PYTHONPATH}" \
-    PATH="/home/pyuser/.local/bin:${PATH}" \
-    PIP_NO_CACHE_DIR=1 \
-    PYTHON_VERSION=3.11
-
-WORKDIR /home/pyuser/app
-
-USER pyuser
-# Copy Python requirements and install
+    PIP_NO_CACHE_DIR=1 \ 
+    DJANGO_ALLOW_ASYNC_UNSAFE=true \
+    PATH="/home/pyuser/.local/bin:${PATH}"
+    
+# Install main production Python dependencies.
 COPY --chown=pyuser:pyuser ./app/requirements.txt ./
-RUN python -m pip install --user --no-cache-dir -r requirements.txt
+RUN pip install --user -r requirements.txt
 
-# Copy package files and install dependencies
+# Install Node dependencies & build static assets
 COPY --chown=pyuser:pyuser ./app/package*.json ./
 RUN npm install
 
-# Copy the rest of the application code
-COPY --chown=pyuser:pyuser ./app/ ./
+# Install test/dev-only Python packages
+RUN pip install --user ipdb pytest pytest-django pytest-playwright factory-boy
 
-# Build static files
+# Install Playwright browsers (the Pythonic way)
+RUN playwright install chromium
+
+# Copy the rest of your app code and run the final build steps
+COPY --chown=pyuser:pyuser ./app/ ./
 RUN npm run build
 RUN python manage.py collectstatic --noinput
+WORKDIR /home/pyuser/app
+
+# At this point, you have:
+# - Production Python packages installed in /home/pyuser/.local
+# - Dev & test Python packages installed
+# - Built and minified static files in app/collectstatic
+# - A working Django codebase ready to run
+
+# Run tests (for development override this)
+CMD ["pytest", "--maxfail=1", "--disable-warnings"]
 
 #########################################
-# Test stage
-FROM builder AS test
-
-# Install system dependencies for Playwright
-USER root
-RUN apk add --no-cache \
-    libstdc++ \
-    chromium \
-    chromium-chromedriver \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
-    ttf-freefont \
-    font-noto-emoji \
-    ffmpeg 
-
-# Create symlink for ffmpeg in the expected location
-RUN mkdir -p /usr/lib/chromium/ffmpeg-1010 && \
-    ln -s /usr/bin/ffmpeg /usr/lib/chromium/ffmpeg-1010/ffmpeg-linux && \
-    chmod -R 777 /usr/lib/chromium
-
-# Switch to pyuser for remaining operations
-USER pyuser
-
-# Install Playwright browsers - needed for recording
-RUN npx playwright install chromium
-
-# Set environment variables for test stage
-ENV CHROME_BIN=/usr/bin/chromium-browser \
-    CHROME_PATH=/usr/lib/chromium/ \
-    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0 \
-    PLAYWRIGHT_BROWSERS_PATH=/usr/lib/chromium \
-    FLASK_ENV=development \
-    FLASK_DEBUG=1 \
-    PATH="/usr/local/bin:/usr/bin:/bin:/home/pyuser/.local/bin:/usr/local/lib/node_modules/npm/bin:${PATH}"
-
-# Install Python debug tools 
-RUN python -m pip install --user ipdb
-
-#########################################
-# Production stage
+# 3) PRODUCTION stage (Alpine-based)
+#    - Super minimal final container
 FROM python:3.11-alpine AS production
 
-# Install only the runtime dependencies
+# Install only runtime dependencies (e.g., for Postgres)
 RUN apk add --no-cache libpq
 
+# Create user + set workdir
 RUN adduser -D pyuser
 WORKDIR /home/pyuser/app
 
-# Copy only what's needed from builder
+# Copy installed python packages and built app from builder stage
 COPY --from=builder /home/pyuser/.local /home/pyuser/.local
 COPY --from=builder /home/pyuser/app/main /home/pyuser/app/main
 COPY --from=builder /home/pyuser/app/ourmeals /home/pyuser/app/ourmeals
@@ -113,13 +102,12 @@ COPY --from=builder /home/pyuser/app/templates /home/pyuser/app/templates
 COPY --from=builder /home/pyuser/app/manage.py /home/pyuser/app/manage.py
 COPY --from=builder /home/pyuser/app/start /home/pyuser/app/start
 
+# Environment
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH="/home/pyuser/.local/lib/python3.11/site-packages:${PYTHONPATH}" \
     PATH="/home/pyuser/.local/bin:${PATH}"
 
 USER pyuser
-EXPOSE 3000/tcp
+EXPOSE 3000
 
-# Use the startup script
 CMD ["/home/pyuser/app/start"]

@@ -12,8 +12,6 @@ class Collection(models.Model):
     def __str__(self):
         return self.title
 
-
-
 class MealPlan(models.Model):
     name = models.CharField(max_length=255)
     owner = models.ForeignKey(User, related_name='owned_mealplans', on_delete=models.CASCADE)

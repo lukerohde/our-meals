@@ -24,6 +24,7 @@ debug.log
 
 # Parcel
 .parcel-cache
+.pytest-cache
 app/static/**/dist/
 .cache
 

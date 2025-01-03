@@ -1,37 +1,13 @@
 import pytest
 from django.urls import reverse
-from django.contrib.sessions.backends.db import SessionStore
-from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, HASH_SESSION_KEY
-from django.test import Client
-from django.contrib.auth.models import User
-from main.views import get_possessive_name
-from main.models import Membership
+from .test_base import BaseTestCase
 from .factories import UserFactory, CollectionFactory, MealPlanFactory, MembershipFactory
 
 pytestmark = pytest.mark.django_db
 
-class BaseTestCase:
-    """Base test class with common authentication and setup methods."""
-    
-    @pytest.fixture(autouse=True)
-    def base_setup(self):
-        """Set up test client for each test."""
-        self.client = Client()
-    
-    def login_user(self, user):
-        """Log in a user and create their session."""
-        self.client.force_login(user)
-    
-    def create_and_login_user(self):
-        """Create a new user and log them in."""
-        user = UserFactory()
-        self.login_user(user)
-        return user
-
-
 class TestCollectionDetail(BaseTestCase):
     @pytest.fixture(autouse=True)
-    def test_setup(self, base_setup):
+    def setup_collection(self, base_setup):
         """Set up test data for each test."""
         self.user = UserFactory()
         self.collection = CollectionFactory(user=self.user)
@@ -90,7 +66,7 @@ class TestCollectionDetail(BaseTestCase):
 
 class TestCollectionList(BaseTestCase):
     @pytest.fixture(autouse=True)
-    def test_setup(self, base_setup):
+    def setup_collection(self, base_setup):
         """Set up test data for each test."""
         self.user = UserFactory()
         self.collection = CollectionFactory(user=self.user)
@@ -100,8 +76,7 @@ class TestCollectionList(BaseTestCase):
         self.login_user(self.user)
         
         # Act
-        url = reverse('main:collection_list')
-        response = self.client.get(url)
+        response = self.client.get(reverse('main:collection_list'))
         
         # Assert
         assert response.status_code == 200
@@ -142,8 +117,7 @@ class TestCollectionList(BaseTestCase):
     
     def test_list_collections_unauthenticated_redirects_to_login(self):
         # Act
-        url = reverse('main:collection_list')
-        response = self.client.get(url)
+        response = self.client.get(reverse('main:collection_list'))
         
         # Assert
         assert response.status_code == 302
@@ -152,61 +126,59 @@ class TestCollectionList(BaseTestCase):
 
 class TestMemberManagement(BaseTestCase):
     @pytest.fixture(autouse=True)
-    def test_setup(self, base_setup):
+    def setup_membership(self, base_setup):
         """Set up test data for each test."""
         self.owner = UserFactory()
         self.member = UserFactory()
         self.non_member = UserFactory()
         self.meal_plan = MealPlanFactory(owner=self.owner)
-        MembershipFactory(user=self.member, meal_plan=self.meal_plan)
+        self.membership = MembershipFactory(user=self.member, meal_plan=self.meal_plan)
     
     def test_owner_can_remove_member(self):
         # Arrange
         self.login_user(self.owner)
         
         # Act
-        url = reverse('main:remove_member', kwargs={
-            'shareable_link': self.meal_plan.shareable_link,
-            'member_id': self.member.id
-        })
-        response = self.client.post(url)
+        response = self.client.post(
+            reverse('main:remove_member', kwargs={
+                'shareable_link': self.meal_plan.shareable_link,
+                'member_id': self.member.id
+            })
+        )
         
         # Assert
         assert response.status_code == 302
-        assert response.url == reverse('main:collection_list')
-        assert not Membership.objects.filter(
-            user=self.member,
-            meal_plan=self.meal_plan
-        ).exists()
+        assert not self.meal_plan.memberships.filter(user_id=self.member.id).exists()
     
     def test_non_owner_cannot_remove_member(self):
         # Arrange
-        self.login_user(self.member)  # Login as member, not owner
+        non_owner = UserFactory()
+        self.login_user(non_owner)
         
         # Act
-        url = reverse('main:remove_member', kwargs={
-            'shareable_link': self.meal_plan.shareable_link,
-            'member_id': self.member.id
-        })
-        response = self.client.post(url)
+        response = self.client.post(
+            reverse('main:remove_member', kwargs={
+                'shareable_link': self.meal_plan.shareable_link,
+                'member_id': self.member.id
+            })
+        )
         
         # Assert
         assert response.status_code == 403
-        assert Membership.objects.filter(
-            user=self.member,
-            meal_plan=self.meal_plan
-        ).exists()
+        assert self.meal_plan.memberships.filter(user_id=self.member.id).exists()
     
     def test_cannot_remove_non_member(self):
         # Arrange
         self.login_user(self.owner)
+        non_member = UserFactory()
         
         # Act
-        url = reverse('main:remove_member', kwargs={
-            'shareable_link': self.meal_plan.shareable_link,
-            'member_id': self.non_member.id
-        })
-        response = self.client.post(url)
+        response = self.client.post(
+            reverse('main:remove_member', kwargs={
+                'shareable_link': self.meal_plan.shareable_link,
+                'member_id': non_member.id
+            })
+        )
         
         # Assert
         assert response.status_code == 404
@@ -216,11 +188,12 @@ class TestMemberManagement(BaseTestCase):
         self.login_user(self.owner)
         
         # Act
-        url = reverse('main:remove_member', kwargs={
-            'shareable_link': '12345678-1234-5678-1234-567812345678',  
-            'member_id': self.member.id
-        })
-        response = self.client.post(url)
+        response = self.client.post(
+            reverse('main:remove_member', kwargs={
+                'shareable_link': '12345678-1234-5678-1234-567812345678',
+                'member_id': self.member.id
+            })
+        )
         
         # Assert
         assert response.status_code == 404

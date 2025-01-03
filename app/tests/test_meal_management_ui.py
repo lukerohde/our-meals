@@ -1,10 +1,10 @@
 from django.urls import reverse
 from pytest import mark
-from django.test import Client
 from .factories import UserFactory, CollectionFactory, MealFactory, MealPlanFactory, MembershipFactory
+from .test_base_ui import UITestBase
 
 @mark.playwright
-class TestMealManagementUI:
+class TestMealManagementUI(UITestBase):
     def test_toggle_meal_in_meal_plan(self, page, live_server, django_user_model):
         # Create test data
         user = UserFactory()
@@ -13,22 +13,14 @@ class TestMealManagementUI:
         meal_plan = MealPlanFactory(owner=user)
         MembershipFactory(user=user, meal_plan=meal_plan)
         
-        # Login user via test client to get a valid session
-        client = Client()
-        client.force_login(user)
-        session_cookie = client.cookies['sessionid']
-        page.context.add_cookies([{
-            'name': 'sessionid',
-            'value': session_cookie.value,
-            'domain': 'localhost',
-            'path': '/',
-        }])
+        # Set up user session
+        self.setup_user_session(page, user)
         
         # Visit collection detail page
         url = f"{live_server.url}{reverse('main:collection_detail', kwargs={'pk': collection.pk})}"
         print(f"Navigating to: {url}")
         page.goto(url)
-        page.wait_for_load_state("domcontentloaded")
+        self.wait_for_page_load(page)
         
         # Initially meal should not be in plan (outline button)
         add_button = page.locator("button.btn.btn-sm.btn-outline-success")
@@ -42,11 +34,7 @@ class TestMealManagementUI:
             add_button.click()
         
         # Wait for success toast
-        success_toast = page.locator(".toast.bg-success").last
-        print("Waiting for success toast...")
-        success_toast.wait_for(state="visible")
-        assert success_toast.is_visible()
-        assert "added to meal plan" in success_toast.text_content()
+        self.wait_for_toast(page, "added to meal plan")
         
         # Button should now be solid success
         remove_button = page.locator("button.btn.btn-sm.btn-success")
@@ -62,39 +50,27 @@ class TestMealManagementUI:
         remove_button.click()
         
         # Wait for success toast
-        success_toast = page.locator(".toast.bg-success").last
-        print("Waiting for success toast...")
-        success_toast.wait_for(state="visible")
-        assert success_toast.is_visible()
-        assert "removed from meal plan" in success_toast.text_content()
+        self.wait_for_toast(page, "removed from meal plan")
         
         # Button should be back to outline
         add_button = page.locator("button.btn.btn-sm.btn-outline-success")
         add_button.wait_for(state="visible")
         assert add_button.is_visible()
-
+    
     def test_delete_meal(self, page, live_server, django_user_model):
         # Create test data
         user = UserFactory()
         collection = CollectionFactory(user=user)
         meal = MealFactory(collection=collection, title="Test Meal")
         
-        # Login user via test client to get a valid session
-        client = Client()
-        client.force_login(user)
-        session_cookie = client.cookies['sessionid']
-        page.context.add_cookies([{
-            'name': 'sessionid',
-            'value': session_cookie.value,
-            'domain': 'localhost',
-            'path': '/',
-        }])
+        # Set up user session
+        self.setup_user_session(page, user)
         
         # Visit collection detail page
         url = f"{live_server.url}{reverse('main:collection_detail', kwargs={'pk': collection.pk})}"
         print(f"Navigating to: {url}")
         page.goto(url)
-        page.wait_for_load_state("domcontentloaded")
+        self.wait_for_page_load(page)
         
         # Find the delete button
         delete_button = page.locator("button.btn.btn-sm.btn-outline-danger")
@@ -110,11 +86,7 @@ class TestMealManagementUI:
         delete_button.click()
         
         # Wait for success toast
-        success_toast = page.locator(".toast.bg-success").last
-        print("Waiting for success toast...")
-        success_toast.wait_for(state="visible")
-        assert success_toast.is_visible()
-        assert "has been deleted" in success_toast.text_content()
+        self.wait_for_toast(page, "has been deleted")
         
         # Wait for card to be removed
         meal_card = page.locator(".meal-card")

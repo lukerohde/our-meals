@@ -26,6 +26,9 @@ from django.core.files.storage import default_storage
 import os
 from django.conf import settings
 import base64
+from PIL import Image
+import pillow_heif
+from io import BytesIO
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -454,6 +457,45 @@ def create_meal_from_recipe_data(collection, recipe_data):
     
     return meal
 
+def convert_to_jpeg(image_file):
+    """Convert any image to JPEG format"""
+    try:
+        content_type = getattr(image_file, 'content_type', '')
+        
+        if content_type == 'image/heic':
+            # Handle HEIC format
+            heif_file = pillow_heif.read_heif(image_file)
+            img = Image.frombytes(
+                heif_file.mode,
+                heif_file.size,
+                heif_file.data,
+                "raw",
+                heif_file.mode,
+                heif_file.stride,
+            )
+        else:
+            # Handle other formats
+            img = Image.open(image_file)
+        
+        # Convert to RGB if necessary (handles PNG with alpha channel)
+        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            bg = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            bg.paste(img, mask=img.split()[-1])  # Use alpha channel as mask
+            img = bg
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Save as JPEG to BytesIO
+        output = BytesIO()
+        img.save(output, format='JPEG', quality=95)
+        output.seek(0)
+        return output
+    except Exception as e:
+        logger.error(f"Error converting image: {str(e)}")
+        raise
+
 def encode_image_file(file):
     """Convert an uploaded file to base64"""
     return base64.b64encode(file.read()).decode('utf-8')
@@ -470,9 +512,10 @@ def upload_photos(request):
         if not file.content_type.startswith('image/'):
             return JsonResponse({'error': 'Only image files are allowed'}, status=400)
             
-        # Convert to base64
-        base64_data = encode_image_file(file)
-        data_url = f"data:{file.content_type};base64,{base64_data}"
+        # Convert to JPEG and get base64
+        jpeg_file = convert_to_jpeg(file)
+        base64_data = base64.b64encode(jpeg_file.read()).decode('utf-8')
+        data_url = f"data:image/jpeg;base64,{base64_data}"
         uploaded_data.append(data_url)
     
     return JsonResponse({'urls': uploaded_data})

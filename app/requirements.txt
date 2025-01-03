@@ -13,6 +13,7 @@
 # openai
 # jwt
 # pillow
+# pillow-heif
 # dj-database-url
 # whitenoise
 
@@ -56,6 +57,7 @@ packaging==24.2
 parso==0.8.4
 pexpect==4.9.0
 pillow==11.0.0
+pillow_heif==0.21.0
 prompt_toolkit==3.0.48
 psycopg2==2.9.10
 ptyprocess==0.7.0

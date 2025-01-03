@@ -149,8 +149,9 @@ Example format: {"title": "Meal Title", "description": "Description of the meal"
             content.append({
                 "type": "image_url",
                 "image_url": {
-                    "url": photo_url
-                }
+                    "url": photo_url,
+                    "detail": "high"     
+                },
             })
     
     messages.append({
@@ -160,7 +161,7 @@ Example format: {"title": "Meal Title", "description": "Description of the meal"
     
     # Call GPT-4 with appropriate parameters
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4o",
         messages=messages,
         max_tokens=4096,
         temperature=0.7,  # Balance between creativity and consistency

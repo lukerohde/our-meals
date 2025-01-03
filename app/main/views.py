@@ -269,6 +269,20 @@ def toggle_meal_in_meal_plan(request, meal_id):
     meal_plan = latest_meal_plan(request)
     collection_id = request.GET.get('collection_id')
     
+    # Get all meal plans where the user is a member
+    user_meal_plans = MealPlan.objects.filter(memberships__user=request.user)
+    
+    # Check if user has access to the meal's collection
+    # Either they own it or they share a meal plan with the owner
+    if not (
+        meal.collection.user == request.user or 
+        User.objects.filter(
+            id=meal.collection.user.id,
+            memberships__meal_plan__in=user_meal_plans
+        ).exists()
+    ):
+        raise Http404("Meal not found")
+    
     if meal in meal_plan.meals.all():
         meal_plan.meals.remove(meal)
         message = f"{meal.title} removed from meal plan!"
@@ -305,6 +319,11 @@ def delete_meal(request, meal_id):
     For meal plan page, removes the meal card. For collection page, redirects.
     """
     meal = get_object_or_404(Meal, id=meal_id)
+    
+    # Check if user owns the meal's collection
+    if meal.collection.user != request.user:
+        raise Http404("Meal not found")
+    
     collection = meal.collection
     meal.delete()
     

@@ -316,3 +316,65 @@ Spices:
         self.meal_plan.refresh_from_db()
         self.assertEqual(self.meal_plan.grocery_list_instruction, instruction)
         self.assertEqual(self.meal_plan.grocery_list, mock_response)
+
+    def test_create_grocery_list_non_member_forbidden(self):
+        """Test that non-members cannot create grocery lists"""
+        non_member = UserFactory()
+        self.login_user(non_member)
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 404)
+    
+    def test_create_grocery_list_empty_instruction(self):
+        """Test grocery list creation with empty instruction"""
+        self.login_user(self.member)
+        
+        mock_response = """```
+Dairy:
+- Milk (1 cup) - Test Recipe from Test Meal
+
+Spices:
+- Cinnamon (2 tbsp) - Test Recipe from Test Meal
+```"""
+        with patch('main.ai_helpers.OpenAI') as mock_openai:
+            mock_chat = mock_openai.return_value.chat.completions
+            mock_chat.create.return_value.choices[0].message.content = mock_response
+            
+            response = self.client.post(self.url)
+        
+        self.assertRedirects(response, reverse('main:meal_plan_detail', kwargs={'shareable_link': self.meal_plan.shareable_link}))
+        
+        self.meal_plan.refresh_from_db()
+        self.assertEqual(self.meal_plan.grocery_list_instruction, '')
+        self.assertEqual(self.meal_plan.grocery_list, mock_response)
+    
+    def test_create_grocery_list_multiple_recipes(self):
+        """Test that grocery list includes ingredients from all recipes"""
+        self.login_user(self.member)
+        
+        # Create another recipe with ingredients
+        recipe2 = RecipeFactory(meal=self.meal)
+        IngredientFactory(recipe=recipe2, name='Sugar', amount='2', unit='tbsp')
+        IngredientFactory(recipe=recipe2, name='Flour', amount='1', unit='cup')
+        
+        mock_response = """```
+Baking:
+- Flour (1 cup) - Test Recipe from Test Meal
+- Sugar (2 tbsp) - Test Recipe from Test Meal
+
+Dairy:
+- Milk (1 cup) - Test Recipe from Test Meal
+
+Spices:
+- Cinnamon (2 tbsp) - Test Recipe from Test Meal
+```"""
+        with patch('main.ai_helpers.OpenAI') as mock_openai:
+            mock_chat = mock_openai.return_value.chat.completions
+            mock_chat.create.return_value.choices[0].message.content = mock_response
+            
+            response = self.client.post(self.url, {'grocery_list_instruction': 'Group by type'})
+        
+        self.assertRedirects(response, reverse('main:meal_plan_detail', kwargs={'shareable_link': self.meal_plan.shareable_link}))
+        
+        self.meal_plan.refresh_from_db()
+        self.assertEqual(self.meal_plan.grocery_list_instruction, 'Group by type')
+        self.assertEqual(self.meal_plan.grocery_list, mock_response)

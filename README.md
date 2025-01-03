@@ -23,15 +23,15 @@ TODO
     * Set goals
         * Prioritise meals by goals
         * Rate meals against goals
-    * Order groceries online
+    * Order groceries online - https://github.com/drkno/au-supermarket-apis
 * Improve code
-    * Tests!! 
-    * Refactor scrapping - that's super ugly
-    * Refactor authorisation check (meal plan member)
+    * DONE Tests!! 
+    * DONE-ish Refactor scrapping - that's super ugly
+    * DONE Refactor authorisation check (meal plan member)
     * DONE Refactor JS
     * DONE Refactor CSS
-    * Refactor views & URLs
-    * Get playwright going
+    * DONE-ish Refactor views & URLs
+    * DONE Get playwright going
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)

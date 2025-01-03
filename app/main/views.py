@@ -353,6 +353,11 @@ def delete_meal(request, pk):
 @login_required
 def create_grocery_list(request, shareable_link):
     meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
+    
+    # Check if user is a member
+    if not meal_plan.memberships.filter(user=request.user).exists():
+        raise Http404("Meal plan not found")
+    
     ingredients = gather_ingredients(meal_plan)
     grocery_list_instruction = request.POST.get('grocery_list_instruction', '') or ''
     formatted_list = summarize_grocery_list_with_genai(ingredients, grocery_list_instruction)

@@ -1,7 +1,7 @@
 {% if meals %}
 <div class="row row-cols-1 row-cols-md-2 g-4">
   {% for meal in meals %}
-    {% include "main/_meal.html" with meal=meal show_buttons=show_buttons collection=collection meal_plan_recipes=meal_plan_recipes %}
+    {% include "main/_meal.html" with meal=meal show_buttons=show_buttons current_meal_plan=current_meal_plan meal_plan_recipes=meal_plan_recipes %}
   {% endfor %}
 </div>
 {% else %}

@@ -116,7 +116,7 @@
     <div class="row mb-5">
         <div class="col-12">
             <h2 class="mb-4">Planned Meals</h2>
-            {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=is_member %}
+            {% include 'main/_meal_list.html' with meals=meal_plan.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=is_member current_meal_plan=current_meal_plan%}
         </div>
     </div>
 

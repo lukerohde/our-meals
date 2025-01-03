@@ -1,6 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db.models import Count
+from django.contrib import messages
+from django.http import JsonResponse, Http404, HttpResponseRedirect
+from django.template.loader import render_to_string
+from django.middleware.csrf import get_token
 from .models import Collection, Recipe, Meal, Ingredient, MethodStep, MealPlan, Membership
 from .forms import CollectionForm
 import requests
@@ -12,7 +17,7 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 import logging
 from collections import defaultdict
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http404, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.db.models import Count, Q
@@ -217,6 +222,7 @@ def meal_plan_detail(request, shareable_link):
             meal_plan.memberships.filter(user=request.user).exists()
         ),
         'meal_plan_recipes': [meal.id for meal in meal_plan.meals.all()],
+        'current_meal_plan': meal_plan,
         'other_members': other_members,
         'all_members': all_members,
     }
@@ -288,10 +294,28 @@ def toggle_meal_in_meal_plan(request, shareable_link, meal_id):
     if meal in meal_plan.meals.all():
         meal_plan.meals.remove(meal)
         message = f"{meal.title} removed from meal plan!"
+        status = 'success'
     else:
         meal_plan.meals.add(meal)
         message = f"{meal.title} added to meal plan!"
+        status = 'success'
     
+    # Handle AJAX requests
+    if request.headers.get('Accept') == 'application/json':
+        context = { 
+            'meal': meal,
+            'meal_plan_recipes': meal_plan.meals.values_list('id', flat=True),
+            'current_meal_plan': meal_plan,
+            'show_buttons': True,
+        }
+        html = render_to_string('main/_meal.html', context, request)
+        return JsonResponse({
+            'message': message,
+            'status': status,
+            'html': html
+        })
+    
+    # Handle regular form submissions
     messages.success(request, message)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 

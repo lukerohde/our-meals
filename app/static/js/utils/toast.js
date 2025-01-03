@@ -36,7 +36,9 @@ export function showToast(message, type = 'success') {
     `
 
     document.body.appendChild(toast)
-    const bsToast = new bootstrap.Toast(toast.querySelector('.toast'))
+    const bsToast = new bootstrap.Toast(toast.querySelector('.toast'), {
+        delay: 10000  // Keep toast visible for 10 seconds
+    })
     bsToast.show()
 
     // Remove the element after the toast is hidden
@@ -44,3 +46,9 @@ export function showToast(message, type = 'success') {
         document.body.removeChild(toast)
     })
 }
+
+// Listen for show-toast events
+document.addEventListener('show-toast', (event) => {
+    const { message, type } = event.detail
+    showToast(message, type)
+})

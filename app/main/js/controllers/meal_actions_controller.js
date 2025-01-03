@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus'
-import { showToast } from '../../../static/js/utils/toast'
+import { showToast } from '../../../../static/js/utils/toast'
 
 /**
  * Meal Actions Controller

@@ -54,7 +54,7 @@
       <h2 class="h3 mb-4">
         <i class="bi bi-collection"></i> Your Recipes
       </h2>
-      {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=True %}
+      {% include 'main/_meal_list.html' with meals=collection.meals.all meal_plan_recipes=meal_plan_recipes show_buttons=True current_meal_plan=current_meal_plan %}
     </div>
   </div>
 </div>

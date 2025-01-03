@@ -34,14 +34,14 @@ export default class extends Controller {
       body: formData
     })
     .then(async response => {
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to import recipe')
-      }
-      return data
+        const data = await response.json()
+        if (!response.ok) {
+          throw new Error(data.message || 'Failed to import recipe')
+        }
+        return data
     })
     .then(data => {
-      showToast('Recipe successfully imported!', 'success')
+      showToast(data.message, data.status)
       window.location.href = data.redirect
     })
     .catch(error => {

@@ -12,7 +12,7 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 import logging
 from collections import defaultdict
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http404
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponse, Http404, HttpResponseForbidden
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.db.models import Count, Q
@@ -88,53 +88,23 @@ def collection_create(request):
 @require_POST
 @login_required
 @transaction.atomic
-def scrape_recipe(request):
+def scrape_recipe(request, collection_id):
     """
     Scrape a recipe from a URL and create a new meal with recipes.
     Supports both AJAX and regular form submissions for progressive enhancement.
-    """    
+    """
     recipe_url = request.POST.get('recipe_url')
-    collection_id = request.POST.get('collection_id')
     collection = get_object_or_404(Collection, id=collection_id)
     
     logger.info(f"User {request.user.username} is scraping recipe from URL: {recipe_url}")
     
     try:
         structured_data = scrape_recipe_from_url(recipe_url)
+        structured_data['url'] = recipe_url  # Add URL to structured data
         
-        # Create the meal
-        meal = Meal.objects.create(
-            title=structured_data.get('title', 'New Meal'),
-            collection=collection,
-            description=structured_data.get('description', ''),
-            url=recipe_url
-        )
-        
+        # Create meal using helper function
+        meal = create_meal_from_data(structured_data, collection)
         logger.info(f"Created Meal: {meal.title} (ID: {meal.id})")
-        
-        # Create recipes and their components
-        for recipe_data in structured_data.get('recipes', []):
-            recipe = Recipe.objects.create(
-                meal=meal,
-                title=recipe_data.get('title', ''),
-                description=recipe_data.get('description', ''),
-            )
-            
-            # Create ingredients
-            for ingredient in recipe_data.get('ingredients', []):
-                Ingredient.objects.create(
-                    recipe=recipe,
-                    name=ingredient.get('name', ''),
-                    amount=ingredient.get('amount', None),
-                    unit=ingredient.get('unit', '')
-                )
-            
-            # Create method steps
-            for step in recipe_data.get('method', []):
-                MethodStep.objects.create(
-                    recipe=recipe,
-                    description=step.strip()
-                )
         
         messages.success(request, "Recipe successfully imported!")
         redirect_url = reverse('main:meal_detail', args=[meal.id])
@@ -143,6 +113,7 @@ def scrape_recipe(request):
         if request.headers.get('Accept') == 'application/json':
             return JsonResponse({
                 'status': 'success',
+                'message': 'Recipe successfully imported!',
                 'redirect': redirect_url
             })
         
@@ -404,6 +375,38 @@ def remove_member(request, shareable_link, member_id):
         return HttpResponseForbidden("Only the meal plan owner can remove members")
     
     member = get_object_or_404(User, id=member_id)
-    Membership.objects.filter(user=member, meal_plan=meal_plan).delete()
+    membership = get_object_or_404(Membership, user=member, meal_plan=meal_plan)
+    membership.delete()
     messages.success(request, f"Removed {member.username} from your meal plan")
     return redirect('main:collection_list')
+
+def create_meal_from_data(structured_data, collection):
+    meal = Meal.objects.create(
+        title=structured_data.get('title', 'New Meal'),
+        collection=collection,
+        description=structured_data.get('description', ''),
+        url=structured_data.get('url', '')
+    )
+    
+    for recipe_data in structured_data.get('recipes', []):
+        recipe = Recipe.objects.create(
+            meal=meal,
+            title=recipe_data.get('title', ''),
+            description=recipe_data.get('description', ''),
+        )
+        
+        for ingredient in recipe_data.get('ingredients', []):
+            Ingredient.objects.create(
+                recipe=recipe,
+                name=ingredient.get('name', ''),
+                amount=ingredient.get('amount', None),
+                unit=ingredient.get('unit', '')
+            )
+        
+        for step in recipe_data.get('method', []):
+            MethodStep.objects.create(
+                recipe=recipe,
+                description=step.strip()
+            )
+    
+    return meal

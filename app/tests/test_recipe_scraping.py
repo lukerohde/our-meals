@@ -33,9 +33,8 @@ class TestRecipeScraping:
             mock_scrape.return_value = mock_recipe_data
             
             # Act
-            response = client.post(reverse('main:scrape'), {
+            response = client.post(reverse('main:scrape', args=[collection.id]), {
                 'recipe_url': recipe_url,
-                'collection_id': collection.id
             })
             
             # Assert
@@ -88,16 +87,19 @@ class TestRecipeScraping:
             
             # Act - Make AJAX request
             response = client.post(
-                reverse('main:scrape'),
-                {'recipe_url': recipe_url, 'collection_id': collection.id},
+                reverse('main:scrape', args=[collection.id]),
+                {'recipe_url': recipe_url},
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest',
                 HTTP_ACCEPT='application/json'
             )
             
             # Assert
             assert response.status_code == 200
             data = response.json()
-            assert data['status'] == 'success'
+            assert 'message' in data
             assert 'redirect' in data
+            assert data['message'] == 'Recipe successfully imported!'
+            assert '/meals/' in data['redirect']
     
     def test_scrape_recipe_invalid_url(self, client):
         """Test error handling for invalid URLs"""
@@ -111,16 +113,17 @@ class TestRecipeScraping:
             
             # Act - Make AJAX request
             response = client.post(
-                reverse('main:scrape'),
-                {'recipe_url': 'invalid-url', 'collection_id': collection.id},
+                reverse('main:scrape', args=[collection.id]),
+                {'recipe_url': 'invalid-url'},
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest',
                 HTTP_ACCEPT='application/json'
             )
             
             # Assert
             assert response.status_code == 400
             data = response.json()
-            assert data['status'] == 'error'
-            assert "check the URL" in data['message']
+            assert 'message' in data
+            assert 'check the URL' in data['message']
     
     def test_scrape_recipe_server_error(self, client):
         """Test handling of unexpected server errors"""
@@ -133,9 +136,8 @@ class TestRecipeScraping:
             mock_scrape.side_effect = Exception("Unexpected error")
             
             # Act - Make regular request
-            response = client.post(reverse('main:scrape'), {
+            response = client.post(reverse('main:scrape', args=[collection.id]), {
                 'recipe_url': 'https://example.com/recipe',
-                'collection_id': collection.id
             })
             
             # Assert

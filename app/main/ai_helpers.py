@@ -1,11 +1,13 @@
 import os
-from openai import OpenAI
-import re
 import json
-import logging
+import base64
 import requests
+from openai import OpenAI
+from django.conf import settings
+import re
+import logging
+import ipdb
 from bs4 import BeautifulSoup
-import json
 
 logger = logging.getLogger(__name__)
 
@@ -60,29 +62,126 @@ def extract_json(response_text):
         logger.debug(f"Failed JSON string: {json_str}")
         raise ValueError(f"JSON decoding failed: {e}")
 
-def parse_recipe_with_genai(raw_text):
-    # Placeholder function for integrating with GenAI
-    # This should send the raw_text to GenAI and receive structured data
-    # Example implementation:
+def get_image_as_base64(url):
+    """Convert an image URL to base64 if it's a local URL"""
+    if url.startswith('data:'):
+        # Already a data URL, just return it
+        return url
+        
+    if url.startswith('/'):
+        # Local URL, read the file from disk
+        file_path = os.path.join(settings.MEDIA_ROOT, url.lstrip('/media/'))
+        with open(file_path, 'rb') as image_file:
+            base64_data = base64.b64encode(image_file.read()).decode('utf-8')
+            return f"data:image/jpeg;base64,{base64_data}"
+    else:
+        # Remote URL, download and convert
+        response = requests.get(url)
+        base64_data = base64.b64encode(response.content).decode('utf-8')
+        return f"data:image/jpeg;base64,{base64_data}"
+
+def parse_recipe_with_genai(raw_text=None, photos=None):
+    """
+    Parse recipe information from text and/or photos using GPT-4.
+    At least one of raw_text or photos must be provided.
+    
+    Args:
+        raw_text (str, optional): Recipe text from URL or user input
+        photos (list, optional): List of image URLs or data URLs
+        
+    Returns:
+        dict: Structured recipe data
+    """
+    if not raw_text and not photos:
+        raise ValueError("Must provide either text or photos to parse recipe")
+
     client = OpenAI(
         api_key=os.getenv('OPENAI_API_KEY')
     )
 
+    # Build the messages array with system prompt
+    messages = [
+        {
+            "role": "system", 
+            "content": """
+Parse the following recipe content into structured JSON. 
+The meal JSON contains a title, a description, and an array of recipes. 
+The description should be drawn from the content and also list key tips from reviewer comments if available. 
+The meal contains an array of recipes. 
+Even though most meals contain only one recipe, some have multiple recipes such as sauces, salads, and sides. 
+Each recipe has a title, an optional description, an array of ingredients, and a method as an array of steps. 
+Each ingredient has a name, an amount, and a unit. 
+Units are standard like cups, tablespoons, teaspoons, grams, pounds, ounces, but using standard abbreviations. 
+Convert fractional amounts to decimals. Amounts should be quoted. 
+Example format: {"title": "Meal Title", "description": "Description of the meal", "recipes": [{"title": "Recipe Title", "description": "Description of the recipe", "ingredients": [{"name": "ingredient1", "amount": "1", "unit": "cup"}, {"name": "ingredient2", "amount": "2", "unit": "tbsp"}], "method": ["Step 1", "Step 2"]}]}"""
+        }
+    ]
+
+    # Build the user message content
+    content = []
+    
+    # Add instruction based on what's provided
+    if raw_text and photos:
+        content.append({
+            "type": "text",
+            "text": "Please analyze this recipe text and these photos to provide structured recipe information:\n\n" + raw_text
+        })
+    elif raw_text:
+        content.append({
+            "type": "text",
+            "text": raw_text
+        })
+    else:  # photos only
+        content.append({
+            "type": "text",
+            "text": "Please analyze these recipe photos to provide structured recipe information:"
+        })
+    
+    # Add photos if provided
+    if photos:
+        for photo in photos:
+            # In development or if URL is local, convert to base64
+            if settings.DEBUG or (isinstance(photo, str) and photo.startswith('/')):
+                photo_url = get_image_as_base64(photo)
+            else:
+                photo_url = photo
+
+            content.append({
+                "type": "image_url",
+                "image_url": {
+                    "url": photo_url
+                }
+            })
+    
+    messages.append({
+        "role": "user",
+        "content": content
+    })
+    
+    # Call GPT-4 with appropriate parameters
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "Parse the following meal text into structured JSON. The meal JSON contain a title, a description and an array of recipes.  The description should be drawn from the page and also list key tips from reviewer comments. The meal contains an array of recipes. Even though most meals contain only one recipe, some have multiple recipes such as sauces, salads and sides.  Each recipe has a title, an optional description, an array of ingredients and a method as an array of steps.  Each ingredient has a name, an amount, and a unit. Units are standard like cups, tablespoons, teaspoons, grams, pounds, ounces, but using standard abbreviations. Convert fractional amounts to decimals. Amounts should be quoted. Example format: {\"title\": \"Meal Title\", \"description\": \"Description of the meal\", \"recipes\": [{\"title\": \"Recipe Title\", \"description\": \"Description of the recipe\", \"ingredients\": [{\"name\": \"ingredient1\", \"amount\": \"1\", \"unit\": \"cup\"}, {\"name\": \"ingredient2\", \"amount\": \"2\", \"unit\": \"tbsp\"}], \"method\": [\"Step 1\", \"Step 2\"]}]} " },
-            {"role": "user", "content": raw_text}
-        ]
+        messages=messages,
+        max_tokens=4096,
+        temperature=0.7,  # Balance between creativity and consistency
+        presence_penalty=0.0,  # No need to encourage topic changes
+        frequency_penalty=0.0  # No need to discourage repetition
     )
-    response_text = response.choices[0].message.content
-    print(response_text)
-    try:
-        structured_data = extract_json(response_text)
-        return structured_data
-    except ValueError as e:
-        print(f"Error parsing JSON: {e}")
-        return None 
+
+    # Extract and parse the JSON response
+    result = extract_json(response.choices[0].message.content)
+    if not result:
+        raise ValueError("Failed to parse recipe information")
+        
+    return result
+
+def parse_recipe_with_photos(photos, existing_data=None):
+    """
+    Parse recipe information from photos using GPT-4 Vision.
+    If existing_data is provided, it will be used as context for the analysis.
+    """
+    # This function is now deprecated - functionality merged into parse_recipe_with_genai
+    raise NotImplementedError("This function is deprecated. Use parse_recipe_with_genai instead.")
 
 def summarize_grocery_list_with_genai(ingredients, grocery_list_instruction):
     # Create a structured list of ingredients with amounts and context

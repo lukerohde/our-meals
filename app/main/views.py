@@ -10,7 +10,7 @@ from .models import Collection, Recipe, Meal, Ingredient, MethodStep, MealPlan, 
 from .forms import CollectionForm
 import requests
 from bs4 import BeautifulSoup
-from .ai_helpers import scrape_recipe_from_url, summarize_grocery_list_with_genai
+from .ai_helpers import scrape_recipe_from_url, summarize_grocery_list_with_genai, parse_recipe_with_photos, parse_recipe_with_genai
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from decimal import Decimal, InvalidOperation
@@ -21,6 +21,11 @@ from django.http import HttpResponse, HttpResponseForbidden
 from django.urls import reverse
 from django.template.loader import render_to_string
 from django.db.models import Count, Q
+import uuid
+from django.core.files.storage import default_storage
+import os
+from django.conf import settings
+import base64
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -30,6 +35,28 @@ def get_possessive_name(name):
     if name.endswith('s'):
         return f"{name}'"
     return f"{name}'s"
+
+def get_recipe_text_from_url(url):
+    """Get recipe text from a URL"""
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Extract main content
+        article = soup.find('article') or soup.find('main') or soup.find('body')
+        if not article:
+            return response.text
+            
+        # Remove unwanted elements
+        for element in article.find_all(['script', 'style', 'nav', 'header', 'footer']):
+            element.decompose()
+            
+        return article.get_text()
+        
+    except Exception as e:
+        logger.error(f"Error fetching recipe from URL: {str(e)}")
+        raise ValueError(f"Failed to access the recipe URL: {str(e)}")
 
 # @login_required
 # def collection_list(request):
@@ -94,67 +121,49 @@ def collection_create(request):
 @login_required
 @transaction.atomic
 def scrape_recipe(request, collection_id):
-    """
-    Scrape a recipe from a URL and create a new meal with recipes.
-    Supports both AJAX and regular form submissions for progressive enhancement.
-    """
-    recipe_url = request.POST.get('recipe_url')
-    collection = get_object_or_404(Collection, id=collection_id)
-    
-    logger.info(f"User {request.user.username} is scraping recipe from URL: {recipe_url}")
-    
+    """Scrape and parse a recipe from a URL or photos"""
     try:
-        structured_data = scrape_recipe_from_url(recipe_url)
-        structured_data['url'] = recipe_url  # Add URL to structured data
+        collection = get_object_or_404(Collection, id=collection_id, user=request.user)
         
-        # Create meal using helper function
-        meal = create_meal_from_data(structured_data, collection)
-        logger.info(f"Created Meal: {meal.title} (ID: {meal.id})")
+        # Get recipe URL and photos
+        recipe_url = request.POST.get('recipe_url', '').strip()
+        photo_urls = []
         
-        messages.success(request, "Recipe successfully imported!")
-        redirect_url = reverse('main:meal_detail', args=[meal.id])
+        # Collect photo URLs from request
+        i = 0
+        while f'photo_{i}' in request.POST:
+            photo_urls.append(request.POST[f'photo_{i}'])
+            i += 1
         
-        # Check if this is an AJAX request
-        if request.headers.get('Accept') == 'application/json':
+        if not recipe_url and not photo_urls:
             return JsonResponse({
-                'status': 'success',
-                'message': 'Recipe successfully imported!',
-                'redirect': redirect_url
-            })
-        
-        # Regular form submission
-        return redirect(redirect_url)
-            
-    except ValueError as e:
-        # Handle specific scraping errors
-        logger.warning(f"Failed to scrape recipe from {recipe_url}: {str(e)}")
-        error_message = str(e)
-        if "Failed to fetch" in error_message:
-            error_message = "We couldn't access that website. Please check the URL and try again."
-        
-        if request.headers.get('Accept') == 'application/json':
-            return JsonResponse({
-                'status': 'error',
-                'message': error_message
+                'message': 'Please provide a recipe URL or photos',
+                'status': 'error'
             }, status=400)
-        
-        messages.error(request, error_message)
-        return redirect('main:collection_detail', pk=collection.id)
-            
-    except Exception as e:
-        # Handle unexpected errors
-        logger.error(f"Unexpected error processing recipe from {recipe_url}: {str(e)}")
-        error_message = "An unexpected error occurred. Please try again later."
-        
-        if request.headers.get('Accept') == 'application/json':
-            return JsonResponse({
-                'status': 'error',
-                'message': error_message
-            }, status=500)
-        
-        messages.error(request, error_message)
-        return redirect('main:collection_detail', pk=collection.id)
 
+        # Get recipe text from URL if provided
+        raw_text = None
+        if recipe_url:
+            raw_text = get_recipe_text_from_url(recipe_url)
+        
+        # Parse recipe with text and/or photos
+        recipe_data = parse_recipe_with_genai(raw_text=raw_text, photos=photo_urls)
+        
+        # Create meal from recipe data
+        meal = create_meal_from_recipe_data(collection, recipe_data)
+        
+        return JsonResponse({
+            'message': 'Recipe imported successfully!',
+            'status': 'success',
+            'redirect': reverse('main:meal_detail', args=[meal.id])
+        })
+        
+    except Exception as e:
+        logger.error(f"Error scraping recipe: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'message': str(e),
+            'status': 'error'
+        }, status=400)
 
 @login_required
 def collection_detail(request, pk):
@@ -414,33 +423,56 @@ def remove_member(request, shareable_link, member_id):
     messages.success(request, f"Removed {member.username} from your meal plan")
     return redirect('main:collection_list')
 
-def create_meal_from_data(structured_data, collection):
+def create_meal_from_recipe_data(collection, recipe_data):
     meal = Meal.objects.create(
-        title=structured_data.get('title', 'New Meal'),
+        title=recipe_data.get('title', 'New Meal'),
         collection=collection,
-        description=structured_data.get('description', ''),
-        url=structured_data.get('url', '')
+        description=recipe_data.get('description', ''),
+        url=recipe_data.get('url', '')
     )
     
-    for recipe_data in structured_data.get('recipes', []):
-        recipe = Recipe.objects.create(
+    for recipe in recipe_data.get('recipes', []):
+        recipe_obj = Recipe.objects.create(
             meal=meal,
-            title=recipe_data.get('title', ''),
-            description=recipe_data.get('description', ''),
+            title=recipe.get('title', ''),
+            description=recipe.get('description', ''),
         )
         
-        for ingredient in recipe_data.get('ingredients', []):
+        for ingredient in recipe.get('ingredients', []):
             Ingredient.objects.create(
-                recipe=recipe,
+                recipe=recipe_obj,
                 name=ingredient.get('name', ''),
                 amount=ingredient.get('amount', None),
                 unit=ingredient.get('unit', '')
             )
         
-        for step in recipe_data.get('method', []):
+        for step in recipe.get('method', []):
             MethodStep.objects.create(
-                recipe=recipe,
+                recipe=recipe_obj,
                 description=step.strip()
             )
     
     return meal
+
+def encode_image_file(file):
+    """Convert an uploaded file to base64"""
+    return base64.b64encode(file.read()).decode('utf-8')
+
+@require_POST
+@login_required
+def upload_photos(request):
+    """Handle photo uploads and return their base64 data"""
+    if not request.FILES:
+        return JsonResponse({'error': 'No files provided'}, status=400)
+    
+    uploaded_data = []
+    for file in request.FILES.getlist('photos'):
+        if not file.content_type.startswith('image/'):
+            return JsonResponse({'error': 'Only image files are allowed'}, status=400)
+            
+        # Convert to base64
+        base64_data = encode_image_file(file)
+        data_url = f"data:{file.content_type};base64,{base64_data}"
+        uploaded_data.append(data_url)
+    
+    return JsonResponse({'urls': uploaded_data})

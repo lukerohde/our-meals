@@ -1,0 +1,61 @@
+{% load static %}
+
+<form method="post" action="{% url 'main:scrape' collection.id %}" 
+      enctype="multipart/form-data"
+      data-controller="recipe-importer"
+      data-action="submit->recipe-importer#submitForm dragover->recipe-importer#handleDragOver dragenter->recipe-importer#handleDragEnter dragleave->recipe-importer#handleDragLeave drop->recipe-importer#handleDrop paste->recipe-importer#handlePaste"
+      data-recipe-importer-target="form"
+      data-recipe-importer-upload-url-value="{% url 'main:upload_photos' %}"
+      class="recipe-import-form">
+  {% csrf_token %}
+  
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="form-floating">
+        <input type="url" class="form-control" id="recipe-url" name="recipe_url" 
+               placeholder="Enter recipe URL"
+               data-recipe-importer-target="input">
+        <label for="recipe-url">Recipe URL (optional)</label>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="recipe-photo-upload" data-recipe-importer-target="dropzone">
+        <div class="upload-prompt">
+          <i class="bi bi-image fs-2"></i>
+          <p>Drag and drop photos here, paste from clipboard, or click to select</p>
+          <input type="file" 
+                 class="d-none" 
+                 data-recipe-importer-target="fileInput"
+                 data-action="change->recipe-importer#handleFileSelect"
+                 accept="image/*"
+                 multiple>
+          <button type="button" class="btn btn-outline-primary mt-2" data-action="click->recipe-importer#triggerFileInput">
+            Choose Photos
+          </button>
+        </div>
+        
+        <div class="photo-preview-container mt-3" data-recipe-importer-target="previewContainer">
+          <!-- Photo previews will be inserted here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary w-100" data-recipe-importer-target="submit">
+        <i class="bi bi-cloud-download"></i> Import Recipe
+      </button>
+      <div class="ai-loading d-none w-100" data-recipe-importer-target="loading">
+        <span>Analyzing Recipe</span>
+        <div class="dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="alert alert-danger mt-3 d-none" data-recipe-importer-target="error" role="alert">
+  </div>
+</form>

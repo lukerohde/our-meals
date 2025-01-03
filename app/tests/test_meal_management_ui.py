@@ -72,3 +72,52 @@ class TestMealManagementUI:
         add_button = page.locator("button.btn.btn-sm.btn-outline-success")
         add_button.wait_for(state="visible")
         assert add_button.is_visible()
+
+    def test_delete_meal(self, page, live_server, django_user_model):
+        # Create test data
+        user = UserFactory()
+        collection = CollectionFactory(user=user)
+        meal = MealFactory(collection=collection, title="Test Meal")
+        
+        # Login user via test client to get a valid session
+        client = Client()
+        client.force_login(user)
+        session_cookie = client.cookies['sessionid']
+        page.context.add_cookies([{
+            'name': 'sessionid',
+            'value': session_cookie.value,
+            'domain': 'localhost',
+            'path': '/',
+        }])
+        
+        # Visit collection detail page
+        url = f"{live_server.url}{reverse('main:collection_detail', kwargs={'pk': collection.pk})}"
+        print(f"Navigating to: {url}")
+        page.goto(url)
+        page.wait_for_load_state("domcontentloaded")
+        
+        # Find the delete button
+        delete_button = page.locator("button.btn.btn-sm.btn-outline-danger")
+        print("Waiting for delete button...")
+        delete_button.wait_for(state="visible")
+        assert delete_button.is_visible()
+        
+        # Set up dialog handler to accept confirmation
+        page.on("dialog", lambda dialog: dialog.accept())
+        
+        # Click delete button and wait for response
+        print("Clicking delete button...")
+        delete_button.click()
+        
+        # Wait for success toast
+        success_toast = page.locator(".toast.bg-success").last
+        print("Waiting for success toast...")
+        success_toast.wait_for(state="visible")
+        assert success_toast.is_visible()
+        assert "has been deleted" in success_toast.text_content()
+        
+        # Wait for card to be removed
+        meal_card = page.locator(".meal-card")
+        print("Waiting for meal card to be removed...")
+        meal_card.wait_for(state="hidden")
+        assert meal_card.count() == 0

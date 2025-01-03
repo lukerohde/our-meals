@@ -333,12 +333,20 @@ def delete_meal(request, pk):
         raise Http404("Meal not found")
     
     # Store message before deleting
-    messages.success(request, f"{meal.title} has been deleted!")
+    message = f"{meal.title} has been deleted!"
     
     # Delete the meal
     meal.delete()
     
-    # For regular form submissions, redirect back to the referring page
+    # Handle AJAX requests
+    if request.headers.get('Accept') == 'application/json':
+        return JsonResponse({
+            'message': message,
+            'status': 'success'
+        })
+    
+    # For regular form submissions, show message and redirect
+    messages.success(request, message)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @require_POST

@@ -1,9 +1,12 @@
 from django.test import TestCase, Client
+import pytest
 from django.urls import reverse
-from .factories import UserFactory, MealPlanFactory, MembershipFactory, MealFactory, CollectionFactory
+from django.contrib.auth.models import User
+from .factories import UserFactory, MealPlanFactory, MembershipFactory, MealFactory, CollectionFactory, RecipeFactory, IngredientFactory
 from main.models import MealPlan, Membership
 from pytest import mark
 from .test_base import MealPlanTestCase
+from unittest.mock import patch
 
 class TestMealPlanDetail(MealPlanTestCase):
     def setUp(self):
@@ -255,3 +258,61 @@ class TestMealPlanToggle(MealPlanTestCase):
         
         # Should redirect back to collection page
         self.assertRedirects(response, collection_url)
+
+
+class TestGroceryList(MealPlanTestCase):
+    """Tests for grocery list functionality"""
+    
+    @pytest.fixture(autouse=True)
+    def grocery_list_setup(self, meal_plan_setup):
+        """Set up test data for grocery list tests"""
+        self.url = reverse('main:create_grocery_list', kwargs={'shareable_link': self.meal_plan.shareable_link})
+        
+        # Add meal to plan
+        self.meal_plan.meals.add(self.meal)
+        
+        # Create recipe with ingredients
+        self.recipe = RecipeFactory(meal=self.meal)
+        IngredientFactory(recipe=self.recipe, name='Milk', amount='1', unit='cup')
+        IngredientFactory(recipe=self.recipe, name='Cinnamon', amount='2', unit='tbsp')
+        
+        # Set member for testing
+        self.member = self.shared_user
+    
+    def test_create_grocery_list_requires_auth(self):
+        """Test that creating grocery list requires authentication"""
+        response = self.client.post(self.url)
+        self.assertRedirects(response, f'/accounts/login/?next={self.url}')
+    
+    def test_create_grocery_list_requires_post(self):
+        """Test that creating grocery list requires POST method"""
+        self.login_user(self.member)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 405)  # Method not allowed
+    
+    def test_create_grocery_list_success(self):
+        """Test successful grocery list creation"""
+        self.login_user(self.member)
+        instruction = "Organize by aisle"
+        
+        mock_response = """```
+Dairy:
+- Milk (1 cup) - Test Recipe from Test Meal
+
+Spices:
+- Cinnamon (2 tbsp) - Test Recipe from Test Meal
+```"""
+        with patch('main.ai_helpers.OpenAI') as mock_openai:
+            # Mock the chat completion
+            mock_chat = mock_openai.return_value.chat.completions
+            mock_chat.create.return_value.choices[0].message.content = mock_response
+            
+            response = self.client.post(self.url, {'grocery_list_instruction': instruction})
+        
+        # Should redirect back to meal plan
+        self.assertRedirects(response, reverse('main:meal_plan_detail', kwargs={'shareable_link': self.meal_plan.shareable_link}))
+        
+        # Refresh meal plan from db
+        self.meal_plan.refresh_from_db()
+        self.assertEqual(self.meal_plan.grocery_list_instruction, instruction)
+        self.assertEqual(self.meal_plan.grocery_list, mock_response)

@@ -1,7 +1,7 @@
 # tests/factories.py
 import factory
 from django.contrib.auth.models import User
-from main.models import Collection, MealPlan, Membership, Meal
+from main.models import Collection, MealPlan, Membership, Meal, Recipe, Ingredient
 
 class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -49,3 +49,20 @@ class MembershipFactory(factory.django.DjangoModelFactory):
     
     user = factory.SubFactory(UserFactory)
     meal_plan = factory.SubFactory(MealPlanFactory)
+
+class RecipeFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Recipe
+    
+    meal = factory.SubFactory(MealFactory)
+    title = factory.Sequence(lambda n: f"Recipe {n}")
+    description = factory.Faker('paragraph')
+
+class IngredientFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Ingredient
+    
+    recipe = factory.SubFactory(RecipeFactory)
+    name = factory.Sequence(lambda n: f"Ingredient {n}")
+    amount = '1'
+    unit = 'cup'

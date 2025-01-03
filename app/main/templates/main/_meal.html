@@ -9,19 +9,21 @@
         </h3>
         {% if show_buttons %}
           <div class="d-flex gap-2">
-            <form method="POST" action="{% url 'main:toggle_meal_in_meal_plan' meal.id %}?collection_id={{ collection.id }}" 
-                  class="d-inline" data-meal-actions-target="form" data-action="submit->meal-actions#toggle">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-sm {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-outline-success{% endif %}"
-                      title="{% if meal.id in meal_plan_recipes %}Remove from Meal Plan{% else %}Add to Meal Plan{% endif %}">
-                {% if meal.id in meal_plan_recipes %}
-                  <i class="bi bi-check-circle-fill"></i>
-                {% else %}
-                  <i class="bi bi-plus-circle"></i>
-                {% endif %}
-              </button>
-            </form>
-            <form method="POST" action="{% url 'main:delete_meal' meal.id %}" 
+            {% if current_meal_plan %}
+              <form method="POST" action="{% url 'main:toggle_meal_in_meal_plan' current_meal_plan.shareable_link meal.id %}" 
+                    class="d-inline" data-meal-actions-target="form" data-action="submit->meal-actions#toggle">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-outline-success{% endif %}"
+                        title="{% if meal.id in meal_plan_recipes %}Remove from Meal Plan{% else %}Add to Meal Plan{% endif %}">
+                  {% if meal.id in meal_plan_recipes %}
+                    <i class="bi bi-check-circle-fill"></i>
+                  {% else %}
+                    <i class="bi bi-plus-circle"></i>
+                  {% endif %}
+                </button>
+              </form>
+            {% endif %}
+            <form method="POST" action="{% url 'main:delete_meal' meal.pk %}" 
                   class="d-inline" data-action="submit->meal-actions#delete" data-meal-actions-confirm-message-value="Are you sure you want to delete this meal?">
               {% csrf_token %}
               <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Meal">

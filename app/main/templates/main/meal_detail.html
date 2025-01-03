@@ -65,19 +65,21 @@
           <i class="bi bi-link-45deg"></i> Original Recipe
         </a>
       {% endif %}
-      <form method="POST" action="{% url 'main:toggle_meal_in_meal_plan' meal.id %}?collection_id={{ meal.collection.id }}">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
-        <button type="submit" 
-                class="btn {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-outline-success{% endif %} me-2 shadow-sm rounded-pill"
-                title="{% if meal.id in meal_plan_recipes %}Remove from Meal Plan{% else %}Add to Meal Plan{% endif %}">
-          {% if meal.id in meal_plan_recipes %}
-            <i class="bi bi-check-circle-fill"></i> In Meal Plan
-          {% else %}
-            <i class="bi bi-plus-circle"></i> Add to Meal Plan
-          {% endif %}
-        </button>
-      </form>
+      {% if current_meal_plan %}
+        <form method="POST" action="{% url 'main:toggle_meal_in_meal_plan' current_meal_plan.shareable_link meal.id %}?collection_id={{ meal.collection.id }}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" 
+                  class="btn {% if meal.id in meal_plan_recipes %}btn-success{% else %}btn-outline-success{% endif %} me-2 shadow-sm rounded-pill"
+                  title="{% if meal.id in meal_plan_recipes %}Remove from Meal Plan{% else %}Add to Meal Plan{% endif %}">
+            {% if meal.id in meal_plan_recipes %}
+              <i class="bi bi-check-circle-fill"></i> In Meal Plan
+            {% else %}
+              <i class="bi bi-plus-circle"></i> Add to Meal Plan
+            {% endif %}
+          </button>
+        </form>
+      {% endif %}
     </div>
 
   <div class="row justify-content-center">

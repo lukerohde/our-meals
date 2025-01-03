@@ -172,7 +172,8 @@ def collection_detail(request, pk):
 
     context = {
         'collection': collection,
-        'meal_plan_recipes': meal_plan_recipes
+        'meal_plan_recipes': meal_plan_recipes,
+        'current_meal_plan': meal_plan,
     }
     
     return render(request, 'main/collection_detail.html', context)
@@ -193,6 +194,7 @@ def meal_detail(request, pk):
         'meal': meal,
         'recipes': recipes,
         'meal_plan_recipes': meal_plan_recipes,
+        'current_meal_plan': meal_plan,
     }
     
     return render(request, 'main/meal_detail.html', context)
@@ -260,29 +262,29 @@ def leave_meal_plan(request, shareable_link):
 
 @require_POST
 @login_required
-def toggle_meal_in_meal_plan(request, meal_id):
+def toggle_meal_in_meal_plan(request, shareable_link, meal_id):
     """
-    Adds or removes a meal from the user's latest meal plan.
-    Handles both AJAX and regular form submissions.
+    Add or remove a meal from a meal plan.
     """
+    meal_plan = get_object_or_404(MealPlan, shareable_link=shareable_link)
     meal = get_object_or_404(Meal, id=meal_id)
-    meal_plan = latest_meal_plan(request)
-    collection_id = request.GET.get('collection_id')
     
-    # Get all meal plans where the user is a member
-    user_meal_plans = MealPlan.objects.filter(memberships__user=request.user)
+    # Check if user is a member of the meal plan
+    if not meal_plan.memberships.filter(user=request.user).exists():
+        raise Http404("Meal plan not found")
     
-    # Check if user has access to the meal's collection
-    # Either they own it or they share a meal plan with the owner
-    if not (
-        meal.collection.user == request.user or 
-        User.objects.filter(
-            id=meal.collection.user.id,
-            memberships__meal_plan__in=user_meal_plans
-        ).exists()
-    ):
-        raise Http404("Meal not found")
+    # Check if user has access to the meal through shared meal plans
+    if meal.collection.user != request.user:
+        shared_meal_plans = MealPlan.objects.filter(
+            memberships__user__in=[request.user, meal.collection.user]
+        ).annotate(
+            member_count=Count('memberships__user', distinct=True)
+        ).filter(member_count=2).exists()
+        
+        if not shared_meal_plans:
+            raise Http404("Meal not found")
     
+    # Toggle meal in meal plan
     if meal in meal_plan.meals.all():
         meal_plan.meals.remove(meal)
         message = f"{meal.title} removed from meal plan!"
@@ -291,53 +293,29 @@ def toggle_meal_in_meal_plan(request, meal_id):
         message = f"{meal.title} added to meal plan!"
     
     messages.success(request, message)
-    
-    if request.headers.get('HX-Request'):
-        # For AJAX requests, render just the meal partial
-        collection = get_object_or_404(Collection, id=collection_id) if collection_id else None
-        meal_plan_meals = set(meal_plan.meals.values_list('id', flat=True))
-        context = {
-            'meal': meal,
-            'show_buttons': True,
-            'collection': collection,
-            'meal_plan_recipes': meal_plan_meals  # Keep variable name for template compatibility
-        }
-        html = render_to_string('main/_meal.html', context, request)
-        return JsonResponse({
-            'html': html,
-            'message': message
-        })
-    
-    # For regular form submissions, redirect back to the referring page
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @require_POST
 @login_required
-def delete_meal(request, meal_id):
+def delete_meal(request, pk):
     """
     Delete a meal and handle both AJAX and regular form submissions.
     For meal plan page, removes the meal card. For collection page, redirects.
     """
-    meal = get_object_or_404(Meal, id=meal_id)
+    meal = get_object_or_404(Meal, pk=pk)
     
     # Check if user owns the meal's collection
     if meal.collection.user != request.user:
         raise Http404("Meal not found")
     
-    collection = meal.collection
+    # Store message before deleting
+    messages.success(request, f"{meal.title} has been deleted!")
+    
+    # Delete the meal
     meal.delete()
     
-    message = f"{meal.title} has been deleted"
-    messages.success(request, message)
-    
-    if request.headers.get('HX-Request'):
-        return JsonResponse({
-            'message': message,
-            'deleted': True
-        })
-    
     # For regular form submissions, redirect back to the referring page
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
 
 @require_POST
 @login_required

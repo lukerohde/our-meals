@@ -242,8 +242,8 @@ def join_meal_plan(request, shareable_link):
         messages.success(request, f"You have successfully joined the meal plan '{meal_plan.name}'.")
         return redirect('main:meal_plan_detail', shareable_link=shareable_link)
     else:
-        # Handle unauthenticated users
-        request.session['joining_shareable_link'] = shareable_link
+        # Handle unauthenticated users - convert UUID to string for session storage
+        request.session['joining_shareable_link'] = str(shareable_link)
         messages.info(request, "Please sign up to join the meal plan.")
         return redirect('account_signup')  # Ensure you have a URL named 'signup'
 

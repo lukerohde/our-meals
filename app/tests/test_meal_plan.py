@@ -1,20 +1,18 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from .factories import UserFactory, MealPlanFactory, MembershipFactory, MealFactory
+from .factories import UserFactory, MealPlanFactory, MembershipFactory, MealFactory, CollectionFactory
 from main.models import MealPlan, Membership
 from pytest import mark
+from .test_base import MealPlanTestCase
 
-class TestMealPlanDetail(TestCase):
+class TestMealPlanDetail(MealPlanTestCase):
     def setUp(self):
-        self.client = Client()
-        self.owner = UserFactory()
+        super().setUp()
         self.member = UserFactory()
         self.non_member = UserFactory()
-        self.meal_plan = MealPlanFactory(owner=self.owner)
         
-        # Create memberships
-        MembershipFactory(user=self.owner, meal_plan=self.meal_plan)  # Owner membership
-        MembershipFactory(user=self.member, meal_plan=self.meal_plan)  # Member membership
+        # Create member membership (owner membership already created in base)
+        MembershipFactory(user=self.member, meal_plan=self.meal_plan)
         
         # Add some meals to the plan
         self.meal1 = MealFactory()
@@ -26,7 +24,7 @@ class TestMealPlanDetail(TestCase):
 
     def test_owner_view_permissions(self):
         """Owner should see edit button and member removal options"""
-        self.client.force_login(self.owner)
+        self.login_user(self.user)
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, 200)
@@ -37,7 +35,7 @@ class TestMealPlanDetail(TestCase):
 
     def test_member_view_permissions(self):
         """Members should see share link and grocery list edit, but not plan edit"""
-        self.client.force_login(self.member)
+        self.login_user(self.member)
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, 200)
@@ -50,7 +48,7 @@ class TestMealPlanDetail(TestCase):
 
     def test_non_member_view_permissions(self):
         """Non-members should see read-only view with join button"""
-        self.client.force_login(self.non_member)
+        self.login_user(self.non_member)
         response = self.client.get(self.url)
         
         self.assertEqual(response.status_code, 200)
@@ -77,30 +75,29 @@ class TestMealPlanDetail(TestCase):
     def test_meal_list_visibility(self):
         """All users should see the meal list, but only members see add/remove buttons"""
         # Check as member
-        self.client.force_login(self.member)
+        self.login_user(self.member)
         member_response = self.client.get(self.url)
         self.assertContains(member_response, 'Planned Meals')
         self.assertTrue(member_response.context['is_member'])
         self.assertContains(member_response, 'bi-check-circle-fill')  # Should see add/remove meal icons
         
         # Check as non-member
-        self.client.force_login(self.non_member)
+        self.login_user(self.non_member)
         non_member_response = self.client.get(self.url)
         self.assertContains(non_member_response, 'Planned Meals')
         self.assertFalse(non_member_response.context['is_member'])
         self.assertNotContains(non_member_response, 'bi-check-circle-fill')  # Shouldn't see add/remove meal icons
 
 
-class TestMealPlanEdit(TestCase):
+class TestMealPlanEdit(MealPlanTestCase):
     def setUp(self):
-        self.client = Client()
-        self.owner = UserFactory()
+        super().setUp()
         self.member = UserFactory()
         self.non_member = UserFactory()
-        self.meal_plan = MealPlanFactory(owner=self.owner, name="Original Name")
+        self.meal_plan.name = "Original Name"
+        self.meal_plan.save()
         
-        # Create memberships
-        MembershipFactory(user=self.owner, meal_plan=self.meal_plan)
+        # Create member membership (owner membership already created in base)
         MembershipFactory(user=self.member, meal_plan=self.meal_plan)
         
         # URLs
@@ -109,7 +106,7 @@ class TestMealPlanEdit(TestCase):
 
     def test_owner_can_access_edit_page(self):
         """Owner should be able to access the edit page"""
-        self.client.force_login(self.owner)
+        self.login_user(self.user)
         response = self.client.get(self.edit_url)
         
         self.assertEqual(response.status_code, 200)
@@ -118,16 +115,14 @@ class TestMealPlanEdit(TestCase):
 
     def test_member_cannot_access_edit_page(self):
         """Members should be redirected with an error message"""
-        self.client.force_login(self.member)
+        self.login_user(self.member)
         response = self.client.get(self.edit_url)
         
         self.assertRedirects(response, self.detail_url)
-        # Note: Django's messages framework doesn't work in tests by default
-        # We could test for messages if needed by setting up message middleware
 
     def test_non_member_cannot_access_edit_page(self):
         """Non-members should be redirected with an error message"""
-        self.client.force_login(self.non_member)
+        self.login_user(self.non_member)
         response = self.client.get(self.edit_url)
         
         self.assertRedirects(response, self.detail_url)
@@ -140,7 +135,7 @@ class TestMealPlanEdit(TestCase):
 
     def test_owner_can_edit_meal_plan(self):
         """Owner should be able to edit the meal plan name"""
-        self.client.force_login(self.owner)
+        self.login_user(self.user)
         new_name = "Updated Name"
         response = self.client.post(self.edit_url, {'name': new_name})
         
@@ -150,9 +145,113 @@ class TestMealPlanEdit(TestCase):
 
     def test_empty_name_validation(self):
         """Empty names should be rejected"""
-        self.client.force_login(self.owner)
+        self.login_user(self.user)
         response = self.client.post(self.edit_url, {'name': ''})
         
         self.assertEqual(response.status_code, 200)  # Stays on the same page
         self.meal_plan.refresh_from_db()
         self.assertEqual(self.meal_plan.name, "Original Name")  # Name unchanged
+
+
+class TestMealPlanToggle(MealPlanTestCase):
+    def setUp(self):
+        super().setUp()
+        self.member = UserFactory()
+        self.non_member = UserFactory()
+        
+        # Create member membership (owner membership already created in base)
+        MembershipFactory(user=self.member, meal_plan=self.meal_plan)
+        
+        # URLs
+        self.toggle_url = reverse('main:toggle_meal_in_meal_plan', kwargs={
+            'shareable_link': self.meal_plan.shareable_link,
+            'meal_id': self.meal.id
+        })
+        self.meal_plan_url = reverse('main:meal_plan_detail', kwargs={
+            'shareable_link': self.meal_plan.shareable_link
+        })
+
+    def test_owner_can_toggle_meal(self):
+        """Owner should be able to add and remove meals"""
+        self.login_user(self.user)
+        
+        # Initially meal should not be in plan
+        self.assertFalse(self.meal_plan.meals.filter(id=self.meal.id).exists())
+        
+        # Add meal to plan
+        response = self.client.post(
+            self.toggle_url,
+            HTTP_REFERER=self.meal_plan_url
+        )
+        
+        # Should redirect back to meal plan page
+        self.assertRedirects(response, self.meal_plan_url)
+        # Meal should be added
+        self.assertTrue(self.meal_plan.meals.filter(id=self.meal.id).exists())
+        
+        # Remove meal from plan
+        response = self.client.post(
+            self.toggle_url,
+            HTTP_REFERER=self.meal_plan_url
+        )
+        
+        # Should redirect back to meal plan page
+        self.assertRedirects(response, self.meal_plan_url)
+        # Meal should be removed
+        self.assertFalse(self.meal_plan.meals.filter(id=self.meal.id).exists())
+
+    def test_member_can_toggle_meal(self):
+        """Members should be able to add and remove meals"""
+        self.login_user(self.member)
+        
+        # Add meal to plan
+        response = self.client.post(
+            self.toggle_url,
+            HTTP_REFERER=self.meal_plan_url
+        )
+        
+        # Should redirect back to meal plan page
+        self.assertRedirects(response, self.meal_plan_url)
+        # Meal should be added
+        self.assertTrue(self.meal_plan.meals.filter(id=self.meal.id).exists())
+
+    def test_non_member_cannot_toggle_meal(self):
+        """Non-members should not be able to toggle meals"""
+        self.login_user(self.non_member)
+        
+        # Try to add meal to plan
+        response = self.client.post(
+            self.toggle_url,
+            HTTP_REFERER=self.meal_plan_url
+        )
+        
+        # Should return 404 (not found)
+        self.assertEqual(response.status_code, 404)
+        # Meal should not be added
+        self.assertFalse(self.meal_plan.meals.filter(id=self.meal.id).exists())
+
+    def test_unauthenticated_user_cannot_toggle_meal(self):
+        """Unauthenticated users should be redirected to login"""
+        response = self.client.post(
+            self.toggle_url,
+            HTTP_REFERER=self.meal_plan_url
+        )
+        
+        expected_url = f'/accounts/login/?next={self.toggle_url}'
+        self.assertRedirects(response, expected_url)
+        # Meal should not be added
+        self.assertFalse(self.meal_plan.meals.filter(id=self.meal.id).exists())
+
+    def test_toggle_respects_referer(self):
+        """Toggle should redirect back to referring page"""
+        self.login_user(self.user)
+        
+        # Try toggle from collection page
+        collection_url = reverse('main:collection_detail', kwargs={'pk': self.collection.pk})
+        response = self.client.post(
+            self.toggle_url,
+            HTTP_REFERER=collection_url
+        )
+        
+        # Should redirect back to collection page
+        self.assertRedirects(response, collection_url)

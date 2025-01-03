@@ -1,5 +1,7 @@
+import pytest
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.urls import reverse
 from django.test import Client
-from pytest import mark
 
 class UITestBase:
     """Base class for UI tests with common setup methods."""

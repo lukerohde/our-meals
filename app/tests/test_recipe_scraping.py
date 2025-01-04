@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.urls import reverse
 from .test_base import BaseTestCase
 from .factories import UserFactory, CollectionFactory
+from .test_recipe_fixtures import get_mock_recipe_text, get_mock_parsed_recipe
 
 pytestmark = pytest.mark.django_db
 
@@ -18,47 +19,8 @@ class TestRecipeScraping(BaseTestCase):
         """Test successful recipe scraping"""
         self.login_user(self.user)
         
-        mock_recipe_text = """
-        Classic Chocolate Chip Cookies
-
-        These cookies are crunchy on the outside, chewy on the inside.
-
-        Ingredients:
-        - 2 1/4 cups all-purpose flour
-        - 1 tsp baking soda
-        - 1 cup butter, softened
-        - 2 cups chocolate chips
-
-        Instructions:
-        1. Preheat oven to 375°F
-        2. Mix dry ingredients
-        3. Cream butter and sugars
-        4. Combine and bake
-        """
-        
-        mock_parsed_recipe = {
-            "title": "Classic Chocolate Chip Cookies",
-            "description": "These cookies are crispy on the outside, chewy on the inside.",
-            "recipes": [{
-                "title": "Classic Chocolate Chip Cookies",
-                "description": "These cookies are crispy on the outside, chewy on the inside.",
-                "ingredients": [
-                    {"name": "all-purpose flour", "amount": "2 1/4", "unit": "cups"},
-                    {"name": "baking soda", "amount": "1", "unit": "tsp"},
-                    {"name": "butter", "amount": "1", "unit": "cup", "notes": "softened"},
-                    {"name": "chocolate chips", "amount": "2", "unit": "cups"}
-                ],
-                "method": [
-                    "Preheat oven to 375°F",
-                    "Mix dry ingredients",
-                    "Cream butter and sugars",
-                    "Combine and bake"
-                ]
-            }]
-        }
-        
-        with patch('main.views.get_recipe_text_from_url', return_value=mock_recipe_text), \
-             patch('main.views.parse_recipe_with_genai', return_value=mock_parsed_recipe):
+        with patch('main.views.get_recipe_text_from_url', return_value=get_mock_recipe_text()), \
+             patch('main.views.parse_recipe_with_genai', return_value=get_mock_parsed_recipe()):
             response = self.client.post(
                 reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
                 {'recipe_url': self.url}
@@ -71,47 +33,8 @@ class TestRecipeScraping(BaseTestCase):
         """Test recipe scraping via AJAX"""
         self.login_user(self.user)
         
-        mock_recipe_text = """
-        Classic Chocolate Chip Cookies
-        
-        These cookies are crispy on the outside, chewy on the inside.
-        
-        Ingredients:
-        - 2 1/4 cups all-purpose flour
-        - 1 tsp baking soda
-        - 1 cup butter, softened
-        - 2 cups chocolate chips
-        
-        Instructions:
-        1. Preheat oven to 375°F
-        2. Mix dry ingredients
-        3. Cream butter and sugars
-        4. Combine and bake
-        """
-        
-        mock_parsed_recipe = {
-            "title": "Classic Chocolate Chip Cookies",
-            "description": "These cookies are crispy on the outside, chewy on the inside.",
-            "recipes": [{
-                "title": "Classic Chocolate Chip Cookies",
-                "description": "These cookies are crispy on the outside, chewy on the inside.",
-                "ingredients": [
-                    {"name": "all-purpose flour", "amount": "2 1/4", "unit": "cups"},
-                    {"name": "baking soda", "amount": "1", "unit": "tsp"},
-                    {"name": "butter", "amount": "1", "unit": "cup", "notes": "softened"},
-                    {"name": "chocolate chips", "amount": "2", "unit": "cups"}
-                ],
-                "method": [
-                    "Preheat oven to 375°F",
-                    "Mix dry ingredients",
-                    "Cream butter and sugars",
-                    "Combine and bake"
-                ]
-            }]
-        }
-        
-        with patch('main.views.get_recipe_text_from_url', return_value=mock_recipe_text), \
-             patch('main.views.parse_recipe_with_genai', return_value=mock_parsed_recipe):
+        with patch('main.views.get_recipe_text_from_url', return_value=get_mock_recipe_text()), \
+             patch('main.views.parse_recipe_with_genai', return_value=get_mock_parsed_recipe()):
             response = self.client.post(
                 reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
                 {'recipe_url': self.url},

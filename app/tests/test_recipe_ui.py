@@ -5,6 +5,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from .factories import UserFactory, CollectionFactory
 from .test_base_ui import UITestBase
 from .test_recipe_fixtures import get_mock_delayed_response, get_mock_parsed_recipe, get_mock_recipe_text
+import os
 
 @pytest.mark.playwright
 class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
@@ -139,8 +140,9 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             ])
             
             # Assert - Check both photo previews appear
-            self.page.wait_for_selector(".photo-preview img", state="visible", timeout=5000)
+            self.page.wait_for_selector(".photo-preview:nth-of-type(2) img", state="visible", timeout=5000)
             previews = self.page.locator(".photo-preview")
+            
             assert previews.count() == 2
             
             # Verify both previews have remove buttons
@@ -177,3 +179,4 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             # Verify method steps
             method_steps = self.page.locator(".method-steps li")
             assert method_steps.count() == 4  # Based on our mock recipe data
+

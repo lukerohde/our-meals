@@ -32,6 +32,9 @@ TODO
     * DONE Refactor CSS
     * DONE-ish Refactor views & URLs
     * DONE Get playwright going
+    * Fix bugs
+        * Can't drop and drag two files
+    * DONE Refactor models
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)
@@ -45,10 +48,11 @@ TODO
     * DONE Fix intermittent 500 on email use
     * Sign up or sign in, as the same page? 
     * DONE Redirect to meal plan after sign up
+    * Social sign up
 * Improve meal import
     * Handle coles online and www.deliciousmagazine.co.uk 
     * Checkout python recipe-scraper
-    * Import from photos using openai 4o or similar
+    * DONE Import from photos using openai 4o or similar
     * Import from pdf 
     * Convert ingredients to region
     * Better handle odd units (to taste, one piece of egg)

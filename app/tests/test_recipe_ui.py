@@ -67,3 +67,35 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             
             # Verify we're still on the same page
             assert f"/collections/{collection.id}" in self.page.url
+
+    def test_photo_upload_via_button(self):
+        """Test uploading a photo using the image button"""
+        # Arrange
+        user = UserFactory()
+        collection = CollectionFactory(user=user)
+        self.setup_user_session(self.page, user)
+        
+        # Act - Go to collection detail page
+        self.page.goto(f"{self.live_server.url}{reverse('main:collection_detail', args=[collection.id])}")
+        self.wait_for_page_load(self.page)
+        
+        # Set up file chooser before clicking button
+        with self.page.expect_file_chooser() as fc_info:
+            # Click the image button to trigger file input
+            self.page.locator("button[data-action='click->recipe-importer#triggerFileInput']").click()
+        
+        # Get the file chooser and set the file
+        file_chooser = fc_info.value
+        file_chooser.set_files("tests/fixtures/test_recipe_image.jpg")
+        
+        # Assert - Check photo preview appears with the image
+        self.page.wait_for_selector(".photo-preview img", state="visible", timeout=5000)
+        preview = self.page.locator(".photo-preview")
+        assert preview.is_visible()
+        
+        # Verify remove button is present
+        assert preview.locator(".remove-photo").is_visible()
+        
+        # Test removing the photo
+        preview.locator(".remove-photo").click()
+        assert preview.count() == 0

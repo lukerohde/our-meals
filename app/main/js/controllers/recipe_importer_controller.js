@@ -1,7 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
+import { showToast } from '../../../static/js/utils/toast'
 
 export default class extends Controller {
-  static targets = ["form", "input", "fileInput", "previewContainer", "submit", "loading", "error"]
+  static targets = ["form", "input", "fileInput", "previewContainer", "submit", "loading"]
   static values = {
     uploadUrl: String
   }
@@ -105,6 +106,7 @@ export default class extends Controller {
         method: 'POST',
         body: formData,
         headers: {
+          'Accept': 'application/json',
           'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
       })
@@ -117,7 +119,7 @@ export default class extends Controller {
       this.uploadedPhotos.push(...data.urls)
       this.updatePhotoPreview()
     } catch (error) {
-      this.showError("Failed to upload photo: " + error.message)
+      showToast(error.message, 'error')
     }
   }
 
@@ -148,8 +150,7 @@ export default class extends Controller {
     this.isProcessing = true
     this.submitTarget.classList.add('d-none')
     this.loadingTarget.classList.remove('d-none')
-    this.errorTarget.classList.add('d-none')
-
+    
     try {
       // Add photo URLs to form data
       this.uploadedPhotos.forEach((url, index) => {
@@ -164,11 +165,16 @@ export default class extends Controller {
         method: 'POST',
         body: new FormData(this.formTarget),
         headers: {
+          'Accept': 'application/json',        
           'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
         }
       })
 
       const data = await response.json()
+      console.log(data)
+      this.submitTarget.classList.remove('d-none')
+      this.loadingTarget.classList.add('d-none')
+      this.isProcessing = false
       
       if (response.ok) {
         window.location.href = data.redirect
@@ -176,15 +182,11 @@ export default class extends Controller {
         throw new Error(data.message || 'Failed to import recipe')
       }
     } catch (error) {
-      this.showError(error.message)
+      console.log(error)
+      showToast(error.message, 'error')
       this.submitTarget.classList.remove('d-none')
       this.loadingTarget.classList.add('d-none')
       this.isProcessing = false
     }
-  }
-
-  showError(message) {
-    this.errorTarget.textContent = message
-    this.errorTarget.classList.remove('d-none')
   }
 }

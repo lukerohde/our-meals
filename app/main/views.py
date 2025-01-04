@@ -127,11 +127,9 @@ def scrape_recipe(request, collection_id):
     """Scrape and parse a recipe from a URL or photos"""
     try:
         collection = get_object_or_404(Collection, id=collection_id, user=request.user)
-        
         # Get recipe URL and photos
         recipe_url = request.POST.get('recipe_url', '').strip()
         photo_urls = []
-        
         # Collect photo URLs from request
         i = 0
         while f'photo_{i}' in request.POST:
@@ -139,10 +137,7 @@ def scrape_recipe(request, collection_id):
             i += 1
         
         if not recipe_url and not photo_urls:
-            return JsonResponse({
-                'message': 'Please provide a recipe URL or photos',
-                'status': 'error'
-            }, status=400)
+            raise ValueError("Please provide a recipe URL or photos")
 
         # Get recipe text from URL if provided
         raw_text = None
@@ -155,18 +150,30 @@ def scrape_recipe(request, collection_id):
         # Create meal from recipe data
         meal = create_meal_from_recipe_data(collection, recipe_data)
         
-        return JsonResponse({
-            'message': 'Recipe imported successfully!',
-            'status': 'success',
-            'redirect': reverse('main:meal_detail', args=[meal.id])
-        })
+        logger.info(f"Created Meal: {meal.title} (ID: {meal.id})")
+        messages.success(request, "Recipe successfully imported!")
+        redirect_url = reverse('main:meal_detail', args=[meal.id])
+
+        if request.headers.get('Accept') == 'application/json':
+            return JsonResponse({
+                'message': 'Recipe successfully imported!',
+                'status': 'success',
+                'redirect': redirect_url
+            })
+        # Regular form submission
+        return redirect(redirect_url)
         
     except Exception as e:
         logger.error(f"Error scraping recipe: {str(e)}", exc_info=True)
-        return JsonResponse({
-            'message': str(e),
-            'status': 'error'
-        }, status=400)
+        if request.headers.get('Accept') == 'application/json':
+            return JsonResponse({
+                'message': str(e),
+                'status': 'error'
+            }, status=400)
+        
+        messages.error(request, str(e))
+        return redirect('main:collection_detail', pk=collection.id)
+        
 
 @login_required
 def collection_detail(request, pk):

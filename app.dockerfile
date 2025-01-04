@@ -14,6 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     sudo \
     gnupg \
+    libheif-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
@@ -87,7 +88,7 @@ CMD ["pytest", "--maxfail=1", "--disable-warnings"]
 FROM python:3.11-alpine AS production
 
 # Install only runtime dependencies (e.g., for Postgres)
-RUN apk add --no-cache libpq
+RUN apk add --no-cache libpq libheif
 
 # Create user + set workdir
 RUN adduser -D pyuser

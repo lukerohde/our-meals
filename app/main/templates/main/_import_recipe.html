@@ -27,6 +27,14 @@
           <button type="submit" class="btn btn-primary" data-recipe-importer-target="submit">
             <i class="bi bi-cloud-download"></i> Import
           </button>
+          <div class="ai-loading d-none btn btn-primary" data-recipe-importer-target="loading">
+            <span>Analyzing Recipe</span>
+            <div class="dots">
+              <div class="dot"></div>
+              <div class="dot"></div>
+              <div class="dot"></div>
+            </div>
+          </div>
         </div>
         <input type="file" 
                class="d-none" 
@@ -40,14 +48,7 @@
         <div class="photo-preview-container" data-recipe-importer-target="previewContainer">
           <!-- Photo previews will be inserted here -->
         </div>
-        <div class="ai-loading d-none w-100" data-recipe-importer-target="loading">
-          <span>Analyzing Recipe</span>
-          <div class="dots">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-          </div>
-        </div>
+        
       </div>
     </div>
     

@@ -96,13 +96,16 @@ CMD ["pytest", "--maxfail=1", "--disable-warnings"]
 #########################################
 # 3) PRODUCTION stage (Alpine-based)
 #    - Super minimal final container
-FROM python:3.11-alpine AS production
+FROM python:3.11-slim-bullseye AS production
 
-# Install only runtime dependencies (e.g., for Postgres)
-RUN apk add --no-cache libpq libheif
+# Install runtime dependencies (e.g., for Postgres)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    libheif1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create user + set workdir
-RUN adduser -D pyuser
+RUN useradd -m pyuser
 WORKDIR /home/pyuser/app
 
 # Copy installed python packages and built app from builder stage

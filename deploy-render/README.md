@@ -35,7 +35,7 @@ RENDER_API_KEY=your_key_here
 4. Environment Variables:
    - Most environment variables are automatically set from render.yaml
    - Database connection is handled via DATABASE_URL
-   - Set secret stuff like OPENAI_API_KEY in Render dashboard
+   - Set secret stuff like OPENAI_API_KEY and AWS S3 secrets in Render dashboard
 
 
 ## Database Scripts

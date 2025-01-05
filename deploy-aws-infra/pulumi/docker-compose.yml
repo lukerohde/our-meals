@@ -1,0 +1,15 @@
+services:
+  pulumi:
+    build: .
+    env_file: .env
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - PULUMI_ACCESS_TOKEN
+      - PULUMI_BACKEND_URL
+      - PULUMI_STACK
+    volumes:
+      - .:/app
+      # For local state backend
+      - ./.pulumi:/root/.pulumi

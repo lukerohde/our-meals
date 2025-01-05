@@ -1,0 +1,5 @@
+pulumi
+pulumi-aws
+python-dotenv
+# pulumi-docker
+# pytest

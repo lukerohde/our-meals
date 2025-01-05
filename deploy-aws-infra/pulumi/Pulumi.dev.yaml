@@ -1,0 +1,4 @@
+config:
+  aws:region: ap-southeast-2
+  ourmeals-s3:mediaBucketName: dev-ourmeals-media
+  ourmeals-s3:allowedOrigins: https://dev.ourmeals.online,https://ourmeals.render.com,https://*.dev.ourmeals.online,https://*.ourmeals.render.com

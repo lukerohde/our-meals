@@ -18,6 +18,10 @@ services:
       - DJANGO_ALLOWED_HOSTS
       - DJANGO_DEBUG
       - OPENAI_API_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_MEDIA_BUCKET_NAME
     links:
       - pg
     tty: true

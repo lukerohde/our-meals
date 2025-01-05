@@ -202,6 +202,29 @@ LOGGING = {
     },
 }
 
+# S3 Storage Settings
+if not DEBUG:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": os.environ.get('AWS_ACCESS_KEY_ID'),
+                "secret_key": os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                "bucket_name": os.environ.get('AWS_MEDIA_BUCKET_NAME'),
+                "region_name": os.environ.get('AWS_S3_REGION_NAME', 'ap-southeast-1'),
+                "object_parameters": {"CacheControl": "max-age=86400"},
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        }
+    }
+    
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
+    # Add storages to INSTALLED_APPS
+    INSTALLED_APPS += ['storages']
+
 # # Provider specific settings
 # SOCIALACCOUNT_PROVIDERS = {
 #     'google': {

@@ -124,7 +124,7 @@ Example format: {"title": "Meal Title", "description": "Description of the meal"
     if raw_text and photos:
         content.append({
             "type": "text",
-            "text": "Please analyze this recipe text and these photos to provide structured recipe information:\n\n" + raw_text
+            "text": "Please analyze this recipe text and all attached photos to provide structured recipe information:\n\n" + raw_text
         })
     elif raw_text:
         content.append({
@@ -136,7 +136,7 @@ Example format: {"title": "Meal Title", "description": "Description of the meal"
             "type": "text",
             "text": "Please analyze these recipe photos to provide structured recipe information:"
         })
-    
+
     # Add photos if provided
     if photos:
         for photo in photos:
@@ -158,7 +158,7 @@ Example format: {"title": "Meal Title", "description": "Description of the meal"
         "role": "user",
         "content": content
     })
-    
+
     # Call GPT-4 with appropriate parameters
     response = client.chat.completions.create(
         model="gpt-4o",

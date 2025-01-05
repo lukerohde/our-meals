@@ -29,6 +29,7 @@ import base64
 from PIL import Image
 import pillow_heif
 from io import BytesIO
+from django.core.files.base import ContentFile
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -510,19 +511,29 @@ def encode_image_file(file):
 @require_POST
 @login_required
 def upload_photos(request):
-    """Handle photo uploads and return their base64 data"""
+    """Handle photo uploads and return their URLs"""
     if not request.FILES:
         return JsonResponse({'error': 'No files provided'}, status=400)
     
-    uploaded_data = []
+    uploaded_urls = []
     for file in request.FILES.getlist('photos'):
         if not file.content_type.startswith('image/'):
             return JsonResponse({'error': 'Only image files are allowed'}, status=400)
             
-        # Convert to JPEG and get base64
+        # Convert to JPEG
         jpeg_file = convert_to_jpeg(file)
-        base64_data = base64.b64encode(jpeg_file.read()).decode('utf-8')
-        data_url = f"data:image/jpeg;base64,{base64_data}"
-        uploaded_data.append(data_url)
+        
+        if settings.DEBUG:
+            # In debug mode, use base64 encoding
+            base64_data = base64.b64encode(jpeg_file.read()).decode('utf-8')
+            url = f"data:image/jpeg;base64,{base64_data}"
+        else:
+            # In production, store in S3
+            file_uuid = str(uuid.uuid4())
+            file_name = f"recipe_photos/{file_uuid}.jpg"
+            saved_name = default_storage.save(file_name, ContentFile(jpeg_file.read()))
+            url = default_storage.url(saved_name)
+            
+        uploaded_urls.append(url)
     
-    return JsonResponse({'urls': uploaded_data})
+    return JsonResponse({'urls': uploaded_urls})

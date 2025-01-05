@@ -42,3 +42,6 @@ app/coverage/
 app/test-results/
 app/playwright
 app/playwright-report
+
+# Pulumi
+.pulumi

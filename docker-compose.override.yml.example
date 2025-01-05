@@ -2,6 +2,11 @@ services:
   app:
     build:
       target: devtest
+      args:
+        AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+        AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+        AWS_REGION: $AWS_REGION
+        AWS_MEDIA_BUCKET_NAME: $AWS_MEDIA_BUCKET_NAME
     volumes:
       - ./app:/home/pyuser/app:delegated
       - ./.media_volume:/home/pyuser/app/media
@@ -16,8 +21,6 @@ services:
     networks:
       - development
     environment:
-      #- PLAYWRIGHT_HTML_HOST=0.0.0.0
-      #- PLAYWRIGHT_HTML_PORT=9323
       - DISPLAY=host.docker.internal:0
       - PLAYWRIGHT_HEADLESS=true
   pg:

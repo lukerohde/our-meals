@@ -35,12 +35,14 @@ TODO
     * Fix bugs
         * Can't drop and drag two files
     * DONE Refactor models
+    * Use whitenoise in development for gunicorn
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)
     * a capture for sign up
     * DONE Invitation only sign up - stop randos joining during rollout 
     * DONE URL/path whitelisting
+    * Lockdown bucket
 * Improve sign up
     * DONE De-restrict passwords, allowing passphrases
     * DONE Allow emails for username
@@ -76,6 +78,8 @@ TODO
     * Makefile
     * DONE Render deploy yaml
     * Github action for test and deploy off main
+    * Get dev bucket working, so I'm not deploying to prod during local dev
+    * Consider skipping asset build in altogether in dev
 
 
 # Setup

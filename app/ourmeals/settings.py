@@ -46,13 +46,13 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',  # Example provider
-    'whitenoise.runserver_nostatic',
+    #'whitenoise.runserver_nostatic',
     'main',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    #'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -138,63 +138,16 @@ STATICFILES_DIRS = [
 ]
 
 # Whitenoise configuration
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_MANIFEST_STRICT = False
-WHITENOISE_AUTOREFRESH = True
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# WHITENOISE_USE_FINDERS = True
+# WHITENOISE_MANIFEST_STRICT = False
+# WHITENOISE_AUTOREFRESH = True
 
 # Media files
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 DATA_UPLOAD_MAX_NUMBER_FILES = 10
-
-
-# S3 Storage Settings
-if not DEBUG:
-    # Production settings
-    # collectstatic uploads to S3
-    # media files are uploaded to S3
-    STORAGES = {
-        "default": {
-            "BACKEND": "storages.backends.s3.S3Storage",
-            "OPTIONS": {
-                "access_key": os.environ.get('AWS_ACCESS_KEY_ID'),
-                "secret_key": os.environ.get('AWS_SECRET_ACCESS_KEY'),
-                "bucket_name": os.environ.get('AWS_MEDIA_BUCKET_NAME'),
-                "region_name": os.environ.get('AWS_S3_REGION_NAME', 'ap-southeast-1'),
-                "object_parameters": {"CacheControl": "max-age=86400"},
-            },
-        },
-        "staticfiles": {
-            "BACKEND": "storages.backends.s3.S3Storage",
-            "OPTIONS": {
-                "bucket_name": os.environ.get('AWS_MEDIA_BUCKET_NAME'),
-            }
-        }
-    }
-    
-    # Add storages to INSTALLED_APPS
-    INSTALLED_APPS += ['storages']
-else:
-    # Local development settings
-    # whitenoise serves static files when using gunicorn (./start)
-    # So there's no need to use nginx in development.  
-    # But remember to run `npm run dev` so static files are maintained during dev
-    # You get hot reload of js and css for free Boom!
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-            "OPTIONS": {
-            },
-        },
-        "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-            "OPTIONS": {
-            }
-        }
-    }
-
 
 # Authentication
 AUTHENTICATION_BACKENDS = (
@@ -247,6 +200,30 @@ LOGGING = {
         },
     },
 }
+
+# S3 Storage Settings
+if not DEBUG:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": os.environ.get('AWS_ACCESS_KEY_ID'),
+                "secret_key": os.environ.get('AWS_SECRET_ACCESS_KEY'),
+                "bucket_name": os.environ.get('AWS_MEDIA_BUCKET_NAME'),
+                "region_name": os.environ.get('AWS_S3_REGION_NAME', 'ap-southeast-1'),
+                "object_parameters": {"CacheControl": "max-age=86400"},
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": os.environ.get('AWS_MEDIA_BUCKET_NAME'),
+            }
+        }
+    }
+    
+    # Add storages to INSTALLED_APPS
+    INSTALLED_APPS += ['storages']
 
 # # Provider specific settings
 # SOCIALACCOUNT_PROVIDERS = {

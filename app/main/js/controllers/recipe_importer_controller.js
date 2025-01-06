@@ -13,11 +13,22 @@ export default class extends Controller {
     
     // Add paste handler to input only
     this.inputTarget.addEventListener('paste', (e) => this.handlePaste(e))
+    // Add input listener for expanding textarea
+    this.inputTarget.addEventListener('input', this.autoExpand.bind(this))
+
   }
 
   disconnect() {
     // Clean up event listeners
     this.inputTarget.removeEventListener('paste', (e) => this.handlePaste(e))
+    this.inputTarget.removeEventListener('input', this.autoExpand.bind(this))
+  }
+
+  // Expanding textarea based on content
+  autoExpand(event) {
+    const textarea = event.target
+    textarea.style.height = 'auto' // Reset height
+    textarea.style.height = `${textarea.scrollHeight}px` // Set height to content
   }
 
   handleDragOver(event) {

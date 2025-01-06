@@ -5,6 +5,7 @@ A totally unnessary django app to manage our menu - it uses GenAI to scrape reci
 TODO
 * Features
     * Edit a meal
+    * Edit a collection
     * DONE AI instruction for meal scraping
     * DONE Edit a meal plan - change its name
     * DONE Delete a meal
@@ -23,6 +24,7 @@ TODO
     * Set goals
         * Prioritise meals by goals
         * Rate meals against goals
+        * Suggest substitutions in recipes for goals
     * Order groceries online - https://github.com/drkno/au-supermarket-apis
 * Improve code
     * DONE Tests!! 
@@ -69,6 +71,9 @@ TODO
     * DONE AJAX Remove from meal plan
     * AJAX Grocery list
     * Async or streaming grocery list
+    * Use reasoning model on grocery list
+    * Expose default grocery list prompt
+    * DONE Fix mobile view of recipe import
 * Improve deployment
     * DONE Serve via gunicorn
     * DONE Multistage docker build with;
@@ -78,8 +83,7 @@ TODO
     * Makefile
     * DONE Render deploy yaml
     * Github action for test and deploy off main
-    * Get dev bucket working, so I'm not deploying to prod during local dev
-    * Consider skipping asset build in altogether in dev
+    * Stop deploying to prod during local dev builds
 
 
 # Setup

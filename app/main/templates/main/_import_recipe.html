@@ -1,33 +1,54 @@
 {% load static %}
+<div class="mb-4">
+  <h2 class="h3 mb-4">
+    <i class="bi bi-cloud-upload"></i> Import Recipe
+  </h2>
+  <div class="card h-100" meal-card">
+    <form method="post" action="{% url 'main:scrape' collection.id %}" 
+          enctype="multipart/form-data"
+          data-controller="recipe-importer"
+          data-action="submit->recipe-importer#submitForm dragover->recipe-importer#handleDragOver dragleave->recipe-importer#handleDragLeave drop->recipe-importer#handleDrop"
+          data-recipe-importer-target="form"
+          data-recipe-importer-upload-url-value="{% url 'main:upload_photos' %}"
+          class="recipe-import-form">
+      {% csrf_token %}
 
-<div class="recipe-section">
-  <form method="post" action="{% url 'main:scrape' collection.id %}" 
-        enctype="multipart/form-data"
-        data-controller="recipe-importer"
-        data-action="submit->recipe-importer#submitForm dragover->recipe-importer#handleDragOver dragleave->recipe-importer#handleDragLeave drop->recipe-importer#handleDrop"
-        data-recipe-importer-target="form"
-        data-recipe-importer-upload-url-value="{% url 'main:upload_photos' %}"
-        class="recipe-import-form">
-    {% csrf_token %}
-    
-    <div class="row g-3">
-      <div class="col-12">
-        <div class="input-group">
+      <div class="expanding-container">
+        <!-- Photo Previews -->
+        <div class="photo-preview-container" data-recipe-importer-target="previewContainer">
+          <!-- Photo previews will be inserted here dynamically -->
+        </div>
+
+        <!-- Textarea -->
+        <div class="form-floating">
+          <textarea 
+            class="form-control" 
+            id="recipe-url" 
+            name="recipe_url" 
+            placeholder="Enter recipe URL, paste image, or drop a file" 
+            data-recipe-importer-target="input"
+            data-action="input->recipe-importer#autoExpand"
+            ondragover="event.preventDefault()"
+            ondrop="event.preventDefault()"
+          ></textarea>
+          <label for="recipe-url">Recipe URL or Image</label>
+        </div>
+
+        <!-- Buttons -->
+        <div class="input-actions">
+          <input type="file" 
+               class="d-none" 
+               data-recipe-importer-target="fileInput"
+               data-action="change->recipe-importer#handleFileSelect"
+               accept="image/*"
+               multiple>
           <button type="button" class="btn btn-outline-secondary" data-action="click->recipe-importer#triggerFileInput">
             <i class="bi bi-image"></i>
           </button>
-          <div class="form-floating flex-grow-1">
-            <input type="text" class="form-control" id="recipe-url" name="recipe_url" 
-                   placeholder="Enter recipe URL or paste image"
-                   data-recipe-importer-target="input"
-                   ondragover="event.preventDefault()"
-                   ondrop="event.preventDefault()">
-            <label for="recipe-url">Recipe URL or Image</label>
-          </div>
-          <button type="submit" class="btn btn-primary" data-recipe-importer-target="submit">
+          <button type="submit" class="btn btn-primary pill-button" data-recipe-importer-target="submit">
             <i class="bi bi-cloud-download"></i> Import
           </button>
-          <div class="ai-loading d-none btn btn-primary" data-recipe-importer-target="loading">
+          <div class="ai-loading d-none btn btn-primary pill-button" data-recipe-importer-target="loading">
             <span>Analyzing Recipe</span>
             <div class="dots">
               <div class="dot"></div>
@@ -36,23 +57,7 @@
             </div>
           </div>
         </div>
-        <input type="file" 
-               class="d-none" 
-               data-recipe-importer-target="fileInput"
-               data-action="change->recipe-importer#handleFileSelect"
-               accept="image/*"
-               multiple>
       </div>
-
-      <div class="col-12">
-        <div class="photo-preview-container" data-recipe-importer-target="previewContainer">
-          <!-- Photo previews will be inserted here -->
-        </div>
-        
-      </div>
-    </div>
-    
-    <div class="alert alert-danger mt-3 d-none" data-recipe-importer-target="error" role="alert">
-    </div>
-  </form>
+    </form>
+  </div>
 </div>

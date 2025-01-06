@@ -31,7 +31,7 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             self.wait_for_page_load(self.page)
             
             # Fill URL and submit
-            self.page.locator("input[name='recipe_url']").fill("https://example.com/recipe")
+            self.page.locator("textarea[name='recipe_url']").fill("https://example.com/recipe")
             self.page.locator("button[type='submit']").click()
                 
             # Assert - Check loading state appears
@@ -55,7 +55,7 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             self.wait_for_page_load(self.page)
             
             # Fill URL and submit (use a malformed but valid-looking URL)
-            self.page.locator("input[name='recipe_url']").fill("https://notarealwebsite.com/recipe")
+            self.page.locator("textarea[name='recipe_url']").fill("https://notarealwebsite.com/recipe")
             self.page.locator("button[type='submit']").click()
             
             # Assert - Check error appears in toast
@@ -85,7 +85,7 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             self.wait_for_page_load(self.page)
             
             # Enter recipe URL
-            self.page.locator("input#recipe-url").fill("https://example.com/recipe")
+            self.page.locator("textarea#recipe-url").fill("https://example.com/recipe")
             
             # Submit the form
             submit_button = self.page.locator("button[data-recipe-importer-target='submit']")

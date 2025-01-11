@@ -51,12 +51,14 @@ ARG AWS_ACCESS_KEY_ID
 ARG AWS_SECRET_ACCESS_KEY
 ARG AWS_REGION
 ARG AWS_MEDIA_BUCKET_NAME
+ARG DJANGO_DEBUG
 
 # Environment variables for runtime and build-time
 ENV AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
 ENV AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
 ENV AWS_REGION=$AWS_REGION
 ENV AWS_MEDIA_BUCKET_NAME=$AWS_MEDIA_BUCKET_NAME
+ENV DJANGO_DEBUG=$DJANGO_DEBUG
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -71,7 +73,11 @@ RUN pip install --user -r requirements.txt
 
 # Install Node dependencies & build static assets
 COPY --chown=pyuser:pyuser ./app/package*.json ./
+# Install in parent directory, to keep node_modules out of app, and still present during dev
+WORKDIR /home/pyuser
+RUN ln -s app/package*.json .
 RUN npm install
+WORKDIR /home/pyuser/app
 
 # Install test/dev-only Python packages
 RUN pip install --user ipdb pytest pytest-django pytest-playwright factory-boy
@@ -82,6 +88,7 @@ RUN playwright install chromium
 # Copy the rest of your app code and run the final build steps
 COPY --chown=pyuser:pyuser ./app/ ./
 RUN npm run build
+RUN echo "Collecting static files.  DJANGO_DEBUG=$DJANGO_DEBUG"
 RUN python manage.py collectstatic --noinput
 
 # At this point, you have:
@@ -111,7 +118,7 @@ WORKDIR /home/pyuser/app
 # Copy installed python packages and built app from builder stage
 COPY --from=devtest /home/pyuser/.local /home/pyuser/.local
 COPY --from=devtest /home/pyuser/app/main /home/pyuser/app/main
-COPY --from=devtest /home/pyuser/app/ourmeals /home/pyuser/app/ourmeals
+COPY --from=devtest /home/pyuser/app/example_project /home/pyuser/app/example_project
 COPY --from=devtest /home/pyuser/app/templates /home/pyuser/app/templates
 COPY --from=devtest /home/pyuser/app/manage.py /home/pyuser/app/manage.py
 COPY --from=devtest /home/pyuser/app/start /home/pyuser/app/start

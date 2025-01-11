@@ -83,7 +83,11 @@ TODO
     * Makefile
     * DONE Render deploy yaml
     * Github action for test and deploy off main
-    * Stop deploying to prod during local dev builds
+    * DONE Stop deploying to prod during local dev builds
+    * DONE Get whitenoise working in dev for gunicorn
+    * DONE Get Media on S3
+    * DONE Get static on S3 - might be better to use whitenoise + CDN for this
+
 
 
 # Setup
@@ -155,5 +159,6 @@ For database backup, restore, and migration instructions:
 
 For more detailed instructions, please refer to the following README files:
 
+- [Deploy to AWS](deploy-aws-infra/pulumi/README.md)
 - [Deploy to Render](deploy-render/README.md)
 - [Deploy to Digital Ocean](deploy-do/README.md)

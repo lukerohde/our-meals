@@ -9,6 +9,7 @@ services:
         AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
         AWS_REGION: $AWS_REGION
         AWS_MEDIA_BUCKET_NAME: $AWS_MEDIA_BUCKET_NAME
+        DJANGO_DEBUG: $DJANGO_DEBUG
     restart: unless-stopped
     environment:
       - APP_PORT

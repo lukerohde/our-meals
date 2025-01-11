@@ -127,7 +127,12 @@ def collection_create(request):
 def scrape_recipe(request, collection_id):
     """Scrape and parse a recipe from a URL or photos"""
     try:
-        collection = get_object_or_404(Collection, id=collection_id, user=request.user)
+        
+
+        #collection = get_object_or_404(Collection, id=collection_id, user=request.user)
+        collection = get_object_or_404(Collection, id=collection_id, user__in=User.objects.filter(memberships__meal_plan__in=request.user.memberships.values('meal_plan')))
+        
+        
         # Get recipe URL and photos
         recipe_url = request.POST.get('recipe_url', '').strip()
         photo_urls = []
@@ -164,6 +169,14 @@ def scrape_recipe(request, collection_id):
         # Regular form submission
         return redirect(redirect_url)
         
+    except Http404:
+        if request.headers.get('Accept') == 'application/json':
+            return JsonResponse({
+                'message': 'Access denied to collection.',
+                'status': 'error'
+            }, status=403)
+        return HttpResponseForbidden()
+
     except Exception as e:
         logger.error(f"Error scraping recipe: {str(e)}", exc_info=True)
         if request.headers.get('Accept') == 'application/json':

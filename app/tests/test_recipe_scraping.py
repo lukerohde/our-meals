@@ -78,3 +78,32 @@ class TestRecipeScraping(BaseTestCase):
         data = response.json()
         assert data['status'] == 'error'
         assert 'Server error' in data['message']
+
+    def test_scrape_recipe_allowed(self):
+        """Test that a user is allowed to scrape if they share a meal plan with the collection owner."""
+        allowed_user = UserFactory()
+        # Assume allowed_user shares a meal plan with self.user
+        allowed_user.memberships.create(meal_plan=self.collection.user.memberships.first().meal_plan)
+        self.login_user(allowed_user)
+
+        with patch('main.views.get_recipe_text_from_url', return_value=get_mock_recipe_text()), \
+             patch('main.views.parse_recipe_with_genai', return_value=get_mock_parsed_recipe()):
+            response = self.client.post(
+                reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
+                {'recipe_url': self.url}
+            )
+
+        assert response.status_code == 302  # Should redirect to collection detail
+        assert '/meals/' in response['Location']
+
+    def test_scrape_recipe_denied(self):
+        """Test that a user is not allowed to scrape if they do not share a meal plan with the collection owner."""
+        denied_user = UserFactory()
+        self.login_user(denied_user)
+
+        response = self.client.post(
+            reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
+            {'recipe_url': self.url}
+        )
+
+        assert response.status_code == 403  # Should return forbidden status

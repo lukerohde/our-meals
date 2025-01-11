@@ -180,3 +180,4 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             method_steps = self.page.locator(".method-steps li")
             assert method_steps.count() == 4  # Based on our mock recipe data
 
+

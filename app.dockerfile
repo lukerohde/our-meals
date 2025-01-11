@@ -118,7 +118,7 @@ WORKDIR /home/pyuser/app
 # Copy installed python packages and built app from builder stage
 COPY --from=devtest /home/pyuser/.local /home/pyuser/.local
 COPY --from=devtest /home/pyuser/app/main /home/pyuser/app/main
-COPY --from=devtest /home/pyuser/app/example_project /home/pyuser/app/example_project
+COPY --from=devtest /home/pyuser/app/ourmeals /home/pyuser/app/ourmeals
 COPY --from=devtest /home/pyuser/app/templates /home/pyuser/app/templates
 COPY --from=devtest /home/pyuser/app/manage.py /home/pyuser/app/manage.py
 COPY --from=devtest /home/pyuser/app/start /home/pyuser/app/start

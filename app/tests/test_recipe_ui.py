@@ -139,8 +139,9 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
                 "tests/fixtures/test_recipe_image_2.jpg"
             ])
             
-            # Assert - Check both photo previews appear
-            self.page.wait_for_selector(".photo-preview:nth-of-type(2) img", state="visible", timeout=5000)
+            # Assert - Check both photo previews appear (wait for non-loading state)
+            self.page.wait_for_selector(".photo-preview:not(.loading)", state="visible", timeout=5000)
+            self.page.wait_for_selector(".photo-preview:nth-of-type(2):not(.loading)", state="visible", timeout=5000)
             previews = self.page.locator(".photo-preview")
             
             assert previews.count() == 2
@@ -179,5 +180,3 @@ class TestRecipeUI(UITestBase, StaticLiveServerTestCase):
             # Verify method steps
             method_steps = self.page.locator(".method-steps li")
             assert method_steps.count() == 4  # Based on our mock recipe data
-
-

@@ -109,6 +109,23 @@ export default class extends Controller {
       return
     }
 
+    // Disable form submission during upload
+    const submitButton = this.submitTarget
+    submitButton.disabled = true
+
+    // Create temporary preview with data URL
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      // Add temporary preview to uploadedPhotos
+      this.uploadedPhotos.push({
+        url: e.target.result,
+        isLoading: true,
+        tempId: Date.now() // Use this to identify the temp preview
+      })
+      this.updatePhotoPreview()
+    }
+    reader.readAsDataURL(file)
+
     const formData = new FormData()
     formData.append('photos', file)
 
@@ -127,20 +144,36 @@ export default class extends Controller {
       }
 
       const data = await response.json()
-      this.uploadedPhotos.push(...data.urls)
+      // Replace temporary preview with actual URLs
+      this.uploadedPhotos = this.uploadedPhotos.filter(photo => !photo.isLoading)
+      this.uploadedPhotos.push(...data.urls.map(url => ({ url })))
       this.updatePhotoPreview()
     } catch (error) {
-      showToast(error.message, 'error')
+      this.showError("Failed to upload photo: " + error.message)
+      // Remove temporary preview
+      this.uploadedPhotos = this.uploadedPhotos.filter(photo => !photo.isLoading)
+      this.updatePhotoPreview()
+    } finally {
+      // Re-enable form submission
+      submitButton.disabled = false
     }
   }
 
   updatePhotoPreview() {
-    this.previewContainerTarget.innerHTML = this.uploadedPhotos.map((url, index) => `
-      <div class="photo-preview">
-        <img src="${url}" alt="Recipe photo ${index + 1}">
-        <button type="button" class="remove-photo" data-index="${index}" aria-label="Remove photo">
-          <i class="bi bi-trash"></i>
-        </button>
+    this.previewContainerTarget.innerHTML = this.uploadedPhotos.map((photo, index) => `
+      <div class="photo-preview${photo.isLoading ? ' loading' : ''}">
+        <img src="${photo.url}" alt="Recipe photo ${index + 1}">
+        ${photo.isLoading ? `
+          <div class="upload-overlay">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        ` : `
+          <button type="button" class="remove-photo" data-index="${index}" aria-label="Remove photo">
+            <i class="bi bi-trash"></i>
+          </button>
+        `}
       </div>
     `).join('')
 
@@ -164,11 +197,11 @@ export default class extends Controller {
     
     try {
       // Add photo URLs to form data
-      this.uploadedPhotos.forEach((url, index) => {
+      this.uploadedPhotos.forEach((photo, index) => {
         const input = document.createElement('input')
         input.type = 'hidden'
         input.name = `photo_${index}`
-        input.value = url
+        input.value = photo.url
         this.formTarget.appendChild(input)
       })
 

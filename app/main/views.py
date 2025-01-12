@@ -30,6 +30,7 @@ from PIL import Image
 import pillow_heif
 from io import BytesIO
 from django.core.files.base import ContentFile
+import re
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -61,6 +62,11 @@ def get_recipe_text_from_url(url):
     except Exception as e:
         logger.error(f"Error fetching recipe from URL: {str(e)}")
         raise ValueError(f"Failed to access the recipe URL: {str(e)}")
+
+def extract_urls_from_text(text):
+    """Extract URLs from text using regex pattern"""
+    url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'
+    return re.findall(url_pattern, text)
 
 # @login_required
 # def collection_list(request):
@@ -125,33 +131,39 @@ def collection_create(request):
 @login_required
 @transaction.atomic
 def scrape_recipe(request, collection_id):
-    """Scrape and parse a recipe from a URL or photos"""
+    """Scrape and parse a recipe from text, URLs, or photos"""
+    import ipdb; ipdb.set_trace()
+            
     try:
-        
 
         #collection = get_object_or_404(Collection, id=collection_id, user=request.user)
         collection = get_object_or_404(Collection, id=collection_id, user__in=User.objects.filter(memberships__meal_plan__in=request.user.memberships.values('meal_plan')))
         
-        
-        # Get recipe URL and photos
-        recipe_url = request.POST.get('recipe_url', '').strip()
+        # Get recipe text/URLs and photos
+        recipe_text_and_urls = request.POST.get('recipe_text_and_urls', '').strip()
         photo_urls = []
         # Collect photo URLs from request
         i = 0
         while f'photo_{i}' in request.POST:
-            photo_urls.append(request.POST[f'photo_{i}'])
+            photo_url = request.POST[f'photo_{i}'].strip()
+            if photo_url:  # Only add non-empty photo URLs
+                photo_urls.append(photo_url)
             i += 1
         
-        if not recipe_url and not photo_urls:
-            raise ValueError("Please provide a recipe URL or photos")
+        if not recipe_text_and_urls and not photo_urls:
+            raise ValueError("Please provide recipe text, URLs, or photos")
 
-        # Get recipe text from URL if provided
-        raw_text = None
-        if recipe_url:
-            raw_text = get_recipe_text_from_url(recipe_url)
+        # Extract URLs from text and get their content
+        raw_text = recipe_text_and_urls
+        if recipe_text_and_urls:
+            urls = extract_urls_from_text(recipe_text_and_urls)
+            for url in urls:
+                url_text = get_recipe_text_from_url(url)
+                if url_text:
+                    raw_text += "\n\n" + url_text
         
         # Parse recipe with text and/or photos
-        recipe_data = parse_recipe_with_genai(raw_text=raw_text, photos=photo_urls)
+        recipe_data = parse_recipe_with_genai(raw_text=raw_text if raw_text else None, photos=photo_urls)
         
         # Create meal from recipe data
         meal = create_meal_from_recipe_data(collection, recipe_data)

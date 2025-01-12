@@ -37,7 +37,7 @@ TODO
     * Fix bugs
         * Can't drop and drag two files
     * DONE Refactor models
-    * Use whitenoise in development for gunicorn
+    * DONE Use whitenoise in development for gunicorn
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)
@@ -74,6 +74,7 @@ TODO
     * Use reasoning model on grocery list
     * Expose default grocery list prompt
     * DONE Fix mobile view of recipe import
+    * DONE Recipe upload spinner
 * Improve deployment
     * DONE Serve via gunicorn
     * DONE Multistage docker build with;

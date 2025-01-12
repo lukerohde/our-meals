@@ -205,9 +205,16 @@ export default class extends Controller {
         this.formTarget.appendChild(input)
       })
 
+      const formData = new FormData()
+      // Add recipe text if provided
+      const recipeText = this.inputTarget.value.trim()
+      if (recipeText) {
+        formData.append('recipe_text_and_urls', recipeText)
+      }
+
       const response = await fetch(this.formTarget.action, {
         method: 'POST',
-        body: new FormData(this.formTarget),
+        body: formData,
         headers: {
           'Accept': 'application/json',        
           'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value

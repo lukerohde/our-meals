@@ -23,10 +23,25 @@ class TestRecipeScraping(BaseTestCase):
              patch('main.views.parse_recipe_with_genai', return_value=get_mock_parsed_recipe()):
             response = self.client.post(
                 reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
-                {'recipe_url': self.url}
+                {'recipe_text_and_urls': self.url}
             )
         
         assert response.status_code == 302  # Should redirect to collection detail
+        assert '/meals/' in response['Location']
+    
+    def test_scrape_recipe_with_text_and_urls(self):
+        """Test recipe scraping with both text and URLs"""
+        self.login_user(self.user)
+        recipe_text = "My favorite recipe:\n\n" + self.url + "\n\nNotes: Cook for 30 mins"
+        
+        with patch('main.views.get_recipe_text_from_url', return_value=get_mock_recipe_text()), \
+             patch('main.views.parse_recipe_with_genai', return_value=get_mock_parsed_recipe()):
+            response = self.client.post(
+                reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
+                {'recipe_text_and_urls': recipe_text}
+            )
+        
+        assert response.status_code == 302
         assert '/meals/' in response['Location']
     
     def test_scrape_recipe_ajax(self):
@@ -37,7 +52,7 @@ class TestRecipeScraping(BaseTestCase):
              patch('main.views.parse_recipe_with_genai', return_value=get_mock_parsed_recipe()):
             response = self.client.post(
                 reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
-                {'recipe_url': self.url},
+                {'recipe_text_and_urls': self.url},
                 HTTP_ACCEPT='application/json'
             )
         
@@ -51,17 +66,17 @@ class TestRecipeScraping(BaseTestCase):
         """Test scraping with invalid URL"""
         self.login_user(self.user)
         
-        #with patch('main.views.get_recipe_text_from_url', side_effect=ValueError('Invalid URL')):
-        response = self.client.post(
-            reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
-            {'recipe_url': 'not-a-url'},
-            HTTP_ACCEPT='application/json'
-        )
+        with patch('main.views.get_recipe_text_from_url', side_effect=ValueError('Failed to access the recipe URL: Invalid URL')):
+            response = self.client.post(
+                reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
+                {'recipe_text_and_urls': 'https://notarealwebsite.com/recipe'},
+                HTTP_ACCEPT='application/json'
+            )
         
         assert response.status_code == 400
         data = response.json()
         assert data['status'] == 'error'
-        assert 'Invalid URL' in data['message']
+        assert 'Failed to access the recipe URL' in data['message']
     
     def test_scrape_recipe_server_error(self):
         """Test scraping with server error"""
@@ -70,7 +85,7 @@ class TestRecipeScraping(BaseTestCase):
         with patch('main.views.get_recipe_text_from_url', side_effect=Exception('Server error')):
             response = self.client.post(
                 reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
-                {'recipe_url': self.url},
+                {'recipe_text_and_urls': self.url},
                 HTTP_ACCEPT='application/json'
             )
         
@@ -90,7 +105,7 @@ class TestRecipeScraping(BaseTestCase):
              patch('main.views.parse_recipe_with_genai', return_value=get_mock_parsed_recipe()):
             response = self.client.post(
                 reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
-                {'recipe_url': self.url}
+                {'recipe_text_and_urls': self.url}
             )
 
         assert response.status_code == 302  # Should redirect to collection detail
@@ -103,7 +118,7 @@ class TestRecipeScraping(BaseTestCase):
 
         response = self.client.post(
             reverse('main:scrape', kwargs={'collection_id': self.collection.id}),
-            {'recipe_url': self.url}
+            {'recipe_text_and_urls': self.url}
         )
 
         assert response.status_code == 403  # Should return forbidden status

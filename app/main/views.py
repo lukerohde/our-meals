@@ -132,7 +132,6 @@ def collection_create(request):
 @transaction.atomic
 def scrape_recipe(request, collection_id):
     """Scrape and parse a recipe from text, URLs, or photos"""
-    import ipdb; ipdb.set_trace()
             
     try:
 

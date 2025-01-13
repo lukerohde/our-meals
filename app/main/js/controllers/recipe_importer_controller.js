@@ -10,6 +10,8 @@ export default class extends Controller {
   connect() {
     this.uploadedPhotos = []
     this.isProcessing = false
+
+    console.log('RecipeImporter controller connected!')
     
     // Add paste handler to input only
     this.inputTarget.addEventListener('paste', (e) => this.handlePaste(e))
@@ -105,7 +107,7 @@ export default class extends Controller {
 
   async uploadPhoto(file) {
     if (!file.type.startsWith('image/')) {
-      this.showError("Only image files are allowed")
+      showToast("Only image files are allowed", 'error')
       return
     }
 
@@ -149,7 +151,7 @@ export default class extends Controller {
       this.uploadedPhotos.push(...data.urls.map(url => ({ url })))
       this.updatePhotoPreview()
     } catch (error) {
-      this.showError("Failed to upload photo: " + error.message)
+      showToast("Failed to upload photo: " + error.message, 'error')
       // Remove temporary preview
       this.uploadedPhotos = this.uploadedPhotos.filter(photo => !photo.isLoading)
       this.updatePhotoPreview()
@@ -196,14 +198,6 @@ export default class extends Controller {
     this.loadingTarget.classList.remove('d-none')
     
     try {
-      // Add photo URLs to form data
-      this.uploadedPhotos.forEach((photo, index) => {
-        const input = document.createElement('input')
-        input.type = 'hidden'
-        input.name = `photo_${index}`
-        input.value = photo.url
-        this.formTarget.appendChild(input)
-      })
 
       const formData = new FormData()
       // Add recipe text if provided
@@ -211,6 +205,15 @@ export default class extends Controller {
       if (recipeText) {
         formData.append('recipe_text_and_urls', recipeText)
       }
+
+      // Add photo URLs to form data
+      this.uploadedPhotos.forEach((photo, index) => {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = `photo_${index}`
+        input.value = photo.url
+        formData.append(input.name, input.value)
+      })      
 
       const response = await fetch(this.formTarget.action, {
         method: 'POST',

@@ -28,7 +28,6 @@ export default class extends Controller {
         if (this.hasGroceryListTarget) {
             this.setupAutoSave()
         }
-        console.log('MealPlanController controller connected')
     }
 
     // Sets up auto-save functionality for grocery list

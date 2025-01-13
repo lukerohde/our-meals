@@ -10,7 +10,7 @@ from .models import Collection, Recipe, Meal, Ingredient, MethodStep, MealPlan, 
 from .forms import CollectionForm
 import requests
 from bs4 import BeautifulSoup
-from .ai_helpers import scrape_recipe_from_url, summarize_grocery_list_with_genai, parse_recipe_with_photos, parse_recipe_with_genai
+from .ai_helpers import summarize_grocery_list_with_genai, parse_recipe_with_genai
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from decimal import Decimal, InvalidOperation
@@ -65,7 +65,7 @@ def get_recipe_text_from_url(url):
 
 def extract_urls_from_text(text):
     """Extract URLs from text using regex pattern"""
-    url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'
+    url_pattern = r'https?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F]{2}))+'
     return re.findall(url_pattern, text)
 
 # @login_required
@@ -132,7 +132,6 @@ def collection_create(request):
 @transaction.atomic
 def scrape_recipe(request, collection_id):
     """Scrape and parse a recipe from text, URLs, or photos"""
-            
     try:
 
         #collection = get_object_or_404(Collection, id=collection_id, user=request.user)
@@ -159,13 +158,19 @@ def scrape_recipe(request, collection_id):
             for url in urls:
                 url_text = get_recipe_text_from_url(url)
                 if url_text:
-                    raw_text += "\n\n" + url_text
+                    # Create the Markdown heading and recipe text
+                    markdown_text = f"\n\n## {url}\n\n{url_text}\n\n"
+                    # Replace the URL in the original text with the Markdown text
+                    raw_text = raw_text.replace(url, markdown_text)
         
         # Parse recipe with text and/or photos
         recipe_data = parse_recipe_with_genai(raw_text=raw_text if raw_text else None, photos=photo_urls)
         
         # Create meal from recipe data
-        meal = create_meal_from_recipe_data(collection, recipe_data)
+        try:
+            meal = create_meal_from_recipe_data(collection, recipe_data)
+        except Exception as e:
+            raise ValueError(f"Our AI made a bit of a boo-boo translating the recipe into computer language.  It's worth giving them another chance.")
         
         logger.info(f"Created Meal: {meal.title} (ID: {meal.id})")
         messages.success(request, "Recipe successfully imported!")
@@ -546,18 +551,13 @@ def upload_photos(request):
             
         # Convert to JPEG
         jpeg_file = convert_to_jpeg(file)
-        
-        if settings.DEBUG:
-            # In debug mode, use base64 encoding
-            base64_data = base64.b64encode(jpeg_file.read()).decode('utf-8')
-            url = f"data:image/jpeg;base64,{base64_data}"
-        else:
-            # In production, store in S3
-            file_uuid = str(uuid.uuid4())
-            file_name = f"recipe_photos/{file_uuid}.jpg"
-            saved_name = default_storage.save(file_name, ContentFile(jpeg_file.read()))
-            url = default_storage.url(saved_name)
-            
+    
+        # In production, store in S3
+        file_uuid = str(uuid.uuid4())
+        file_name = f"recipe_photos/{file_uuid}.jpg"
+        saved_name = default_storage.save(file_name, ContentFile(jpeg_file.read()))
+        url = default_storage.url(saved_name)
+
         uploaded_urls.append(url)
     
     return JsonResponse({'urls': uploaded_urls})

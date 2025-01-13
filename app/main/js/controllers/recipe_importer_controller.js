@@ -11,8 +11,6 @@ export default class extends Controller {
     this.uploadedPhotos = []
     this.isProcessing = false
 
-    console.log('RecipeImporter controller connected!')
-    
     // Add paste handler to input only
     this.inputTarget.addEventListener('paste', (e) => this.handlePaste(e))
     // Add input listener for expanding textarea

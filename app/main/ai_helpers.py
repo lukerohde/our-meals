@@ -39,7 +39,7 @@ def extract_json(response_text):
         if json_start != -1:
             json_str = response_text[json_start:]
         else:
-            raise ValueError("No JSON content found in the response.")
+            raise ValueError("Our AI can be a bit temperamental and didn't behave as requested.  Sorry.  WHen this happens, it's worth trying again. ")
     
     # Preprocess JSON string to replace fractional expressions
     def replace_fractions(match):
@@ -103,48 +103,50 @@ def parse_recipe_with_genai(raw_text=None, photos=None):
     messages = [
         {
             "role": "system", 
-            "content": """
-Parse the following recipe content into structured JSON. 
+            "content": [{
+                "type": "text",
+                "text": """
+Parse the following recipe information into structured JSON. 
 The meal JSON contains a title, a description, and an array of recipes. 
 The description should be drawn from the content and also list key tips from reviewer comments if available. 
 The meal contains an array of recipes. 
-Even though most meals contain only one recipe, some have multiple recipes such as sauces, salads, and sides. 
+Even though most recipe plans contain only one recipe, some have multiple recipes such as sauces, salads, sides or drinks. 
 Each recipe has a title, an optional description, an array of ingredients, and a method as an array of steps. 
 Each ingredient has a name, an amount, and a unit. 
 Units are standard like cups, tablespoons, teaspoons, grams, pounds, ounces, but using standard abbreviations. 
 Convert fractional amounts to decimals. Amounts should be quoted. 
 Example format: {"title": "Meal Title", "description": "Description of the meal", "recipes": [{"title": "Recipe Title", "description": "Description of the recipe", "ingredients": [{"name": "ingredient1", "amount": "1", "unit": "cup"}, {"name": "ingredient2", "amount": "2", "unit": "tbsp"}], "method": ["Step 1", "Step 2"]}]}"""
-        }
+            }]
+        }   
     ]
 
     # Build the user message content
     content = []
     
     # Add instruction based on what's provided
-    if raw_text and photos:
+    if raw_text:
         content.append({
             "type": "text",
-            "text": "Please analyze this recipe text and all attached photos to provide structured recipe information:\n\n" + raw_text
+            "text": "Please analyze the following recipe text and include structured recipe information." 
         })
-    elif raw_text:
         content.append({
             "type": "text",
             "text": raw_text
         })
-    else:  # photos only
-        content.append({
-            "type": "text",
-            "text": "Please analyze these recipe photos to provide structured recipe information:"
-        })
-
+    
     # Add photos if provided
     if photos:
         for photo in photos:
             # In development or if URL is local, convert to base64
-            if settings.DEBUG or (isinstance(photo, str) and photo.startswith('/')):
+            if (settings.DEBUG or (isinstance(photo, str) and photo.startswith('/'))):
                 photo_url = get_image_as_base64(photo)
             else:
                 photo_url = photo
+            
+            content.append({
+                "type": "text",
+                "text": "Please analyze this recipe photo and include structured recipe information.  You have this capability.  Please prioritise the photo."
+            })
 
             content.append({
                 "type": "image_url",
@@ -164,25 +166,17 @@ Example format: {"title": "Meal Title", "description": "Description of the meal"
         model="gpt-4o",
         messages=messages,
         max_tokens=4096,
-        temperature=0.7,  # Balance between creativity and consistency
+        temperature=0.8,  # Balance between creativity and consistency
         presence_penalty=0.0,  # No need to encourage topic changes
         frequency_penalty=0.0  # No need to discourage repetition
     )
-
+    
     # Extract and parse the JSON response
     result = extract_json(response.choices[0].message.content)
     if not result:
         raise ValueError("Failed to parse recipe information")
         
     return result
-
-def parse_recipe_with_photos(photos, existing_data=None):
-    """
-    Parse recipe information from photos using GPT-4 Vision.
-    If existing_data is provided, it will be used as context for the analysis.
-    """
-    # This function is now deprecated - functionality merged into parse_recipe_with_genai
-    raise NotImplementedError("This function is deprecated. Use parse_recipe_with_genai instead.")
 
 def summarize_grocery_list_with_genai(ingredients, grocery_list_instruction):
     # Create a structured list of ingredients with amounts and context
@@ -225,43 +219,3 @@ Please consolidate similar ingredients and their amounts when possible.
     response_text = response.choices[0].message.content
     return response_text
 
-
-def scrape_recipe_from_url(recipe_url):
-    """
-    Scrapes a recipe from the given URL and returns structured data.
-    """
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-                        'AppleWebKit/537.36 (KHTML, like Gecko) ' +
-                        'Chrome/58.0.3029.110 Safari/537.3',
-        'Referer': 'https://www.google.com/',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Connection': 'keep-alive'
-    }
-    
-    try:
-        response = requests.get(recipe_url, headers=headers, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        recipe_text = extract_recipe_text(soup)
-        result = parse_recipe_with_genai(recipe_text)
-        return result
-        
-    except Exception as e:
-        logger.error(f"Error scraping recipe from {recipe_url}: {str(e)}")
-        raise ValueError(f"Failed to scrape recipe: {str(e)}")
-
-
-def extract_recipe_text(soup):
-    """Extract recipe text from HTML"""
-    # Remove script and style elements
-    for script in soup(["script", "style"]):
-        script.decompose()
-    
-    # Get text and normalize whitespace
-    text = soup.get_text()
-    lines = (line.strip() for line in text.splitlines())
-    text = ' '.join(line for line in lines if line)
-    return text

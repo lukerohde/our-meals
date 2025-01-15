@@ -60,6 +60,9 @@
       <a href="{% url 'main:collection_detail' meal.collection.pk %}" class="btn btn-primary me-2 shadow-sm rounded-pill">
         <i class="bi bi-arrow-left me-2"></i>Back
       </a>
+      <a href="{% url 'main:meal_edit' meal.pk %}" class="btn btn-outline-primary me-2 shadow-sm rounded-pill">
+        <i class="bi bi-pencil"></i> Edit
+      </a>
       {% if meal.url %}
         <a href="{{ meal.url }}" target="_blank" class="btn btn-outline-primary me-2 shadow-sm rounded-pill">
           <i class="bi bi-link-45deg"></i> Original Recipe

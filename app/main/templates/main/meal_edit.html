@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid px-4">
+  <div class="mb-5">
+    <h1 class="mb-3">Edit {{ meal.title }}</h1>
+    
+    <div class="btn-group mb-4" role="group" aria-label="Actions">
+      <a href="{% url 'main:meal_detail' meal.pk %}" class="btn btn-outline-primary me-2 shadow-sm rounded-pill">
+        <i class="bi bi-arrow-left me-2"></i>Cancel
+      </a>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center">
+      <div class="col-lg-10">
+        <form method="POST" data-controller="recipe-editor">
+          {% csrf_token %}
+          <div class="form-group">
+            <textarea 
+              name="meal_text" 
+              class="form-control font-monospace" 
+              rows="20" 
+              data-recipe-editor-target="input"
+              data-action="input->recipe-editor#autoExpand"
+              style="white-space: pre-wrap;"
+              placeholder="Enter your meal details here..."
+            >{{ meal_text }}</textarea>
+          </div>
+          
+          <div class="mt-4">
+            <button type="submit" class="btn btn-primary rounded-pill">
+              <i class="bi bi-check2"></i> Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

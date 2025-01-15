@@ -253,6 +253,94 @@ def meal_detail(request, pk):
     
     return render(request, 'main/meal_detail.html', context)
 
+@login_required
+def meal_edit(request, pk):
+    meal = get_object_or_404(Meal, pk=pk)
+    
+    # Check if user has access to this meal through collection
+    if meal.collection.user != request.user:
+        return HttpResponseForbidden("You don't have permission to edit this meal")
+    
+    # Convert meal to text format
+    meal_text = f"{meal.title}\n\n"
+    if meal.description:
+        meal_text += f"{meal.description}\n\n"
+    
+    for recipe in meal.recipes.all():
+        meal_text += f"# {recipe.title}\n"
+        if recipe.description:
+            meal_text += f"{recipe.description}\n\n"
+        
+        meal_text += "## Ingredients\n"
+        for ingredient in recipe.ingredients.all():
+            amount_str = f"{ingredient.amount} " if ingredient.amount else ""
+            meal_text += f"- {amount_str}{ingredient.unit} {ingredient.name}\n"
+        
+        meal_text += "\n## Method\n"
+        for step in recipe.method_steps.all():
+            meal_text += f"- {step.description}\n"
+        meal_text += "\n"
+    
+    if request.method == "POST":
+        new_text = request.POST.get('meal_text')
+        try:
+            # Parse the text back into structured data
+            parsed_data = parse_recipe_with_genai(raw_text=new_text)
+            
+            with transaction.atomic():
+                # Update meal
+                meal.title = parsed_data['title']
+                meal.description = parsed_data.get('description', '')
+                meal.save()
+                
+                # Clear existing recipes
+                meal.recipes.all().delete()
+                
+                # Create new recipes
+                for recipe_data in parsed_data['recipes']:
+                    recipe = Recipe.objects.create(
+                        meal=meal,
+                        title=recipe_data['title'],
+                        description=recipe_data.get('description', '')
+                    )
+                    
+                    # Create ingredients
+                    for ing_data in recipe_data.get('ingredients', []):
+                        Ingredient.objects.create(
+                            recipe=recipe,
+                            name=ing_data['name'],
+                            amount=ing_data.get('amount'),
+                            unit=ing_data.get('unit', '')
+                        )
+                    
+                    # Create method steps
+                    for step_data in recipe_data.get('method', []):
+                        MethodStep.objects.create(
+                            recipe=recipe,
+                            description=step_data
+                        )
+            
+            messages.success(request, "Meal updated successfully!")
+            
+            if request.headers.get('HX-Request'):
+                return HttpResponseRedirect(reverse('main:meal_detail', args=[meal.pk]))
+            return redirect('main:meal_detail', pk=meal.pk)
+            
+        except Exception as e:
+            messages.error(request, f"Error parsing meal text: {str(e)}")
+            if request.headers.get('HX-Request'):
+                return HttpResponse(status=422)
+            return render(request, 'main/meal_edit.html', {'meal': meal, 'meal_text': new_text})
+    
+    context = {
+        'meal': meal,
+        'meal_text': meal_text
+    }
+    
+    if request.headers.get('HX-Request'):
+        return render(request, 'main/meal_edit.html', context)
+    return render(request, 'main/meal_edit.html', context)
+
 def meal_plan_detail(request, shareable_link):
     """
     Display a meal plan based on the shareable link. Accessible to both authenticated members and unauthenticated users.

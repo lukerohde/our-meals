@@ -4,8 +4,8 @@ A totally unnessary django app to manage our menu - it uses GenAI to scrape reci
 
 TODO
 * Features
-    * Edit a meal
-    * Edit a collection
+    * DONE Edit a meal
+    * DONE Edit a collection
     * DONE AI instruction for meal scraping
     * DONE Edit a meal plan - change its name
     * DONE Delete a meal
@@ -42,6 +42,7 @@ TODO
         * Can't drop and drag two files
     * DONE Refactor models
     * DONE Use whitenoise in development for gunicorn
+    * Fix AJAX grocery list AI tests
 * Improve security
     * Unguessable collection and recipe links
     * Read only mode on collections and recipies that aren't yours (or your meal plans)

@@ -29,6 +29,11 @@
                                         <a href="{% url 'main:collection_detail' collection.pk %}" class="text-decoration-none" style="color: #b5651d;">
                                             {{ collection.title }}
                                         </a>
+                                        {% if collection.user == user %}
+                                        <a href="{% url 'main:collection_edit' collection.pk %}" class="text-muted ms-2" style="font-size: 0.7em; text-decoration: none;">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        {% endif %}
                                     </h5>
                                     {% if collection.description %}
                                         <p class="card-text text-muted">{{ collection.description|truncatewords:30 }}</p>

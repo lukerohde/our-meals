@@ -8,6 +8,7 @@ urlpatterns = [
     path('', views.collection_list, name='collection_list'),  
     path('collections/create/', views.collection_create, name='collection_create'),
     path('collections/<int:pk>/', views.collection_detail, name='collection_detail'),
+    path('collections/<int:pk>/edit/', views.collection_edit, name='collection_edit'),
     
     # Meals
     path('collections/<int:collection_id>/meals/create/', views.scrape_recipe, name='scrape'),

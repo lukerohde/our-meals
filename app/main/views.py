@@ -127,6 +127,29 @@ def collection_create(request):
         form = CollectionForm()
     return render(request, 'main/collection_form.html', {'form': form})
 
+@login_required
+def collection_edit(request, pk):
+    collection = get_object_or_404(Collection, pk=pk)
+    
+    # Check if user is the owner
+    if collection.user != request.user:
+        messages.error(request, "You don't have permission to edit this collection.")
+        return redirect('main:collection_detail', pk=pk)
+    
+    if request.method == 'POST':
+        form = CollectionForm(request.POST, request.FILES, instance=collection)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Collection updated successfully!')
+            return redirect('main:collection_detail', pk=pk)
+    else:
+        form = CollectionForm(instance=collection)
+    
+    return render(request, 'main/collection_form.html', {
+        'form': form,
+        'collection': collection,
+    })
+
 @require_POST
 @login_required
 @transaction.atomic

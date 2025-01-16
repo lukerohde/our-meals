@@ -197,3 +197,77 @@ class TestMemberManagement(BaseTestCase):
         
         # Assert
         assert response.status_code == 404
+
+
+class TestCollectionEdit(BaseTestCase):
+    @pytest.fixture(autouse=True)
+    def setup_collection(self, base_setup):
+        """Set up test data for each test."""
+        self.user = UserFactory()
+        self.collection = CollectionFactory(user=self.user)
+        self.edit_url = reverse('main:collection_edit', kwargs={'pk': self.collection.pk})
+    
+    def test_owner_can_access_edit_page(self):
+        # Arrange
+        self.login_user(self.user)
+        
+        # Act
+        response = self.client.get(self.edit_url)
+        
+        # Assert
+        assert response.status_code == 200
+        assert 'Edit Cook Book' in response.content.decode()
+    
+    def test_owner_can_edit_collection(self):
+        # Arrange
+        self.login_user(self.user)
+        new_title = "Updated Collection Title"
+        new_description = "Updated collection description"
+        
+        # Act
+        response = self.client.post(self.edit_url, {
+            'title': new_title,
+            'description': new_description,
+        })
+        
+        # Assert
+        assert response.status_code == 302  # Redirect after successful edit
+        self.collection.refresh_from_db()
+        assert self.collection.title == new_title
+        assert self.collection.description == new_description
+    
+    def test_non_owner_cannot_access_edit_page(self):
+        # Arrange
+        other_user = UserFactory()
+        self.login_user(other_user)
+        
+        # Act
+        response = self.client.get(self.edit_url)
+        
+        # Assert
+        assert response.status_code == 302  # Redirect to detail page
+        
+    def test_non_owner_cannot_edit_collection(self):
+        # Arrange
+        other_user = UserFactory()
+        self.login_user(other_user)
+        original_title = self.collection.title
+        
+        # Act
+        response = self.client.post(self.edit_url, {
+            'title': 'Attempted title change',
+            'description': 'Attempted description change',
+        })
+        
+        # Assert
+        assert response.status_code == 302  # Redirect to detail page
+        self.collection.refresh_from_db()
+        assert self.collection.title == original_title  # Title should not have changed
+    
+    def test_unauthenticated_cannot_access_edit_page(self):
+        # Act
+        response = self.client.get(self.edit_url)
+        
+        # Assert
+        assert response.status_code == 302
+        assert '/login/' in response['Location']

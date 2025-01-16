@@ -18,6 +18,10 @@ TODO
     * Import and display pictures
     * DONE Accept a family invite
     * DONE Invite a family member
+    * When scraping, or editing a recipe, you can give AI an instruction
+        * Please modify by x, e.g. convert all units to metric
+        * Please merge the essential elements of recipe x and y 
+        * Let the AI provide commentary, explaining what it has done.
     * Suggest and search for meals 
         * Cookbooks
         * Online

@@ -4,7 +4,14 @@
 <div class="row justify-content-center">
   <div class="col-lg-10">
     <div class="mb-5">
-      <h1 class="display-4 mb-3">{{ collection.title }}</h1>
+      <h1 class="display-4 mb-3">
+        {{ collection.title }}
+        {% if collection.user == user %}
+        <a href="{% url 'main:collection_edit' collection.pk %}" class="text-muted ms-2" style="font-size: 0.5em; text-decoration: none;">
+          <i class="bi bi-pencil-square"></i>
+        </a>
+        {% endif %}
+      </h1>
       {% if collection.description %}
         <p class="lead text-muted">{{ collection.description }}</p>
       {% endif %}

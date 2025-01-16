@@ -122,3 +122,142 @@ class TestRecipeScraping(BaseTestCase):
         )
 
         assert response.status_code == 403  # Should return forbidden status
+
+
+class TestRecipeDataSaving(BaseTestCase):
+    @pytest.fixture(autouse=True)
+    def setup_recipe_data(self, base_setup):
+        """Set up test data for each test."""
+        self.user = UserFactory()
+        self.collection = CollectionFactory(user=self.user)
+        self.recipe_data = {
+            'title': 'Test Recipe',
+            'description': 'A test recipe',
+            'url': 'https://example.com/recipe',
+            'recipes': [
+                {
+                    'title': 'Main Recipe',
+                    'description': 'The main part',
+                    'ingredients': [
+                        {'name': 'flour', 'amount': '2', 'unit': 'cups'},
+                        {'name': 'sugar', 'amount': '1', 'unit': 'cup'}
+                    ],
+                    'method': [
+                        'Mix flour and sugar',
+                        'Bake at 350F'
+                    ]
+                }
+            ]
+        }
+
+    def test_create_new_meal(self):
+        """Test creating a new meal from recipe data"""
+        from main.ai_helpers import save_parsed_recipe
+
+        meal, created = save_parsed_recipe(self.recipe_data, collection=self.collection)
+
+        assert created is True
+        assert meal.title == 'Test Recipe'
+        assert meal.description == 'A test recipe'
+        assert meal.url == 'https://example.com/recipe'
+        assert meal.collection == self.collection
+
+        # Check recipe was created
+        assert meal.recipes.count() == 1
+        recipe = meal.recipes.first()
+        assert recipe.title == 'Main Recipe'
+        assert recipe.description == 'The main part'
+
+        # Check ingredients were created
+        assert recipe.ingredients.count() == 2
+        flour = recipe.ingredients.get(name='flour')
+        assert flour.amount == '2'
+        assert flour.unit == 'cups'
+
+        # Check method steps were created
+        assert recipe.method_steps.count() == 2
+        assert 'Mix flour and sugar' in [s.description for s in recipe.method_steps.all()]
+
+    def test_update_existing_meal(self):
+        """Test updating an existing meal with new recipe data"""
+        from main.ai_helpers import save_parsed_recipe
+
+        # First create a meal
+        meal, _ = save_parsed_recipe(self.recipe_data, collection=self.collection)
+
+        # Now update it with new data
+        updated_data = {
+            'title': 'Updated Recipe',
+            'description': 'An updated recipe',
+            'url': 'https://example.com/updated',
+            'recipes': [
+                {
+                    'title': 'New Version',
+                    'description': 'The updated version',
+                    'ingredients': [
+                        {'name': 'chocolate', 'amount': '3', 'unit': 'oz'}
+                    ],
+                    'method': [
+                        'Melt chocolate',
+                        'Let cool'
+                    ]
+                }
+            ]
+        }
+
+        updated_meal, created = save_parsed_recipe(updated_data, meal=meal)
+
+        assert created is False
+        assert updated_meal.id == meal.id  # Same meal
+        assert updated_meal.title == 'Updated Recipe'
+        assert updated_meal.url == 'https://example.com/updated'
+
+        # Check recipe was updated
+        assert updated_meal.recipes.count() == 1
+        recipe = updated_meal.recipes.first()
+        assert recipe.title == 'New Version'
+
+        # Check ingredients were updated
+        assert recipe.ingredients.count() == 1
+        chocolate = recipe.ingredients.first()
+        assert chocolate.name == 'chocolate'
+        assert chocolate.amount == '3'
+
+        # Check method steps were updated
+        assert recipe.method_steps.count() == 2
+        assert 'Melt chocolate' in [s.description for s in recipe.method_steps.all()]
+
+    def test_save_recipe_without_collection_or_meal(self):
+        """Test that save_parsed_recipe raises ValueError when neither collection nor meal is provided"""
+        from main.ai_helpers import save_parsed_recipe
+
+        with pytest.raises(ValueError, match="Must provide either a meal to update or a collection to create in"):
+            save_parsed_recipe(self.recipe_data)
+
+    def test_save_recipe_with_missing_fields(self):
+        """Test that save_parsed_recipe handles missing optional fields gracefully"""
+        from main.ai_helpers import save_parsed_recipe
+
+        minimal_data = {
+            'title': 'Minimal Recipe',
+            'recipes': [
+                {
+                    'title': 'Basic',
+                    'ingredients': [],
+                    'method': []
+                }
+            ]
+        }
+
+        meal, created = save_parsed_recipe(minimal_data, collection=self.collection)
+
+        assert created is True
+        assert meal.title == 'Minimal Recipe'
+        assert meal.description == ''  # Default empty string
+        assert meal.url == ''  # Default empty string
+        assert meal.recipes.count() == 1
+        recipe = meal.recipes.first()
+        assert recipe.title == 'Basic'
+        assert recipe.description == ''
+        assert recipe.ingredients.count() == 0
+        assert recipe.method_steps.count() == 0

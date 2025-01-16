@@ -178,6 +178,110 @@ Example format: {"title": "Meal Title", "description": "Description of the meal"
         
     return result
 
+def format_meal_as_markdown(meal):
+    """
+    Convert a meal object to a markdown-formatted text representation.
+    
+    Args:
+        meal: The Meal object to format
+        
+    Returns:
+        str: Markdown-formatted text representation of the meal
+    """
+    meal_text = f"{meal.title}\n\n"
+    if meal.description:
+        meal_text += f"{meal.description}\n\n"
+    
+    for recipe in meal.recipes.all():
+        meal_text += f"# {recipe.title}\n"
+        if recipe.description:
+            meal_text += f"{recipe.description}\n\n"
+        
+        meal_text += "## Ingredients\n"
+        for ingredient in recipe.ingredients.all():
+            amount_str = f"{ingredient.amount} " if ingredient.amount else ""
+            meal_text += f"- {amount_str}{ingredient.unit} {ingredient.name}\n"
+        
+        meal_text += "\n## Method\n"
+        for step in recipe.method_steps.all():
+            meal_text += f"- {step.description}\n"
+        meal_text += "\n"
+    
+    return meal_text
+
+def _create_or_update_meal_from_data(recipe_data, meal=None, collection=None):
+    """
+    Internal helper to create or update a meal from recipe data.
+    This handles the common logic for both save_parsed_recipe and create_meal_from_recipe_data.
+    """
+    from .models import Meal, Recipe, Ingredient, MethodStep
+    
+    if not meal:
+        meal = Meal.objects.create(
+            title=recipe_data.get('title', 'New Meal'),
+            collection=collection,
+            description=recipe_data.get('description', ''),
+            url=recipe_data.get('url', '')
+        )
+    else:
+        meal.title = recipe_data.get('title', 'New Meal')
+        meal.description = recipe_data.get('description', '')
+        meal.url = recipe_data.get('url', meal.url)  # Preserve existing URL if not provided
+        meal.save()
+        meal.recipes.all().delete()  # Clear existing recipes if updating
+    
+    # Create new recipes
+    for recipe in recipe_data.get('recipes', []):
+        recipe_obj = Recipe.objects.create(
+            meal=meal,
+            title=recipe.get('title', ''),
+            description=recipe.get('description', ''),
+        )
+        
+        # Create ingredients
+        for ing_data in recipe.get('ingredients', []):
+            Ingredient.objects.create(
+                recipe=recipe_obj,
+                name=ing_data.get('name', ''),
+                amount=ing_data.get('amount', None),
+                unit=ing_data.get('unit', '')
+            )
+        
+        # Create method steps
+        for step_data in recipe.get('method', []):
+            MethodStep.objects.create(
+                recipe=recipe_obj,
+                description=step_data.strip()
+            )
+    
+    return meal
+
+def save_parsed_recipe(recipe_data, meal=None, collection=None):
+    """
+    Save parsed recipe data to a new or existing meal.
+    
+    Args:
+        recipe_data: Parsed recipe data from parse_recipe_with_genai
+        meal: Optional existing meal to update
+        collection: Required if meal is None, the collection to create the meal in
+        
+    Returns:
+        tuple: (meal, created) where created is True if a new meal was created
+        
+    Raises:
+        ValueError: If collection is not provided for new meals
+    """
+    from django.db import transaction
+    
+    if not meal and not collection:
+        raise ValueError("Must provide either a meal to update or a collection to create in")
+    
+    with transaction.atomic():
+        created = not bool(meal)
+        meal = _create_or_update_meal_from_data(recipe_data, meal=meal, collection=collection)
+    
+    return meal, created
+
 def summarize_grocery_list_with_genai(ingredients, grocery_list_instruction):
     # Create a structured list of ingredients with amounts and context
     ingredient_details = []
@@ -218,4 +322,3 @@ Please consolidate similar ingredients and their amounts when possible.
     )
     response_text = response.choices[0].message.content
     return response_text
-

@@ -10,7 +10,7 @@ from .models import Collection, Recipe, Meal, Ingredient, MethodStep, MealPlan, 
 from .forms import CollectionForm
 import requests
 from bs4 import BeautifulSoup
-from .ai_helpers import summarize_grocery_list_with_genai, parse_recipe_with_genai
+from .ai_helpers import summarize_grocery_list_with_genai, parse_recipe_with_genai, save_parsed_recipe, format_meal_as_markdown, _create_or_update_meal_from_data
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from decimal import Decimal, InvalidOperation
@@ -163,14 +163,9 @@ def scrape_recipe(request, collection_id):
                     # Replace the URL in the original text with the Markdown text
                     raw_text = raw_text.replace(url, markdown_text)
         
-        # Parse recipe with text and/or photos
+        # Parse recipe with text and/or photos and save it
         recipe_data = parse_recipe_with_genai(raw_text=raw_text if raw_text else None, photos=photo_urls)
-        
-        # Create meal from recipe data
-        try:
-            meal = create_meal_from_recipe_data(collection, recipe_data)
-        except Exception as e:
-            raise ValueError(f"Our AI made a bit of a boo-boo translating the recipe into computer language.  It's worth giving them another chance.")
+        meal, created = save_parsed_recipe(recipe_data, collection=collection)
         
         logger.info(f"Created Meal: {meal.title} (ID: {meal.id})")
         messages.success(request, "Recipe successfully imported!")
@@ -203,7 +198,6 @@ def scrape_recipe(request, collection_id):
         
         messages.error(request, str(e))
         return redirect('main:collection_detail', pk=collection.id)
-        
 
 @login_required
 def collection_detail(request, pk):
@@ -255,95 +249,52 @@ def meal_detail(request, pk):
 
 @login_required
 def meal_edit(request, pk):
+    """Display meal edit form"""
     meal = get_object_or_404(Meal, pk=pk)
     
     # Check if user has access to this meal through collection
     if meal.collection.user != request.user:
         return HttpResponseForbidden("You don't have permission to edit this meal")
     
-    # Convert meal to text format
-    meal_text = f"{meal.title}\n\n"
-    if meal.description:
-        meal_text += f"{meal.description}\n\n"
-    
-    for recipe in meal.recipes.all():
-        meal_text += f"# {recipe.title}\n"
-        if recipe.description:
-            meal_text += f"{recipe.description}\n\n"
-        
-        meal_text += "## Ingredients\n"
-        for ingredient in recipe.ingredients.all():
-            amount_str = f"{ingredient.amount} " if ingredient.amount else ""
-            meal_text += f"- {amount_str}{ingredient.unit} {ingredient.name}\n"
-        
-        meal_text += "\n## Method\n"
-        for step in recipe.method_steps.all():
-            meal_text += f"- {step.description}\n"
-        meal_text += "\n"
-    
-    if request.method == "POST":
-        new_text = request.POST.get('meal_text')
-        try:
-            # Parse the text back into structured data
-            parsed_data = parse_recipe_with_genai(raw_text=new_text)
-            
-            with transaction.atomic():
-                # Update meal
-                meal.title = parsed_data['title']
-                meal.description = parsed_data.get('description', '')
-                meal.save()
-                
-                # Clear existing recipes
-                meal.recipes.all().delete()
-                
-                # Create new recipes
-                for recipe_data in parsed_data['recipes']:
-                    recipe = Recipe.objects.create(
-                        meal=meal,
-                        title=recipe_data['title'],
-                        description=recipe_data.get('description', '')
-                    )
-                    
-                    # Create ingredients
-                    for ing_data in recipe_data.get('ingredients', []):
-                        Ingredient.objects.create(
-                            recipe=recipe,
-                            name=ing_data['name'],
-                            amount=ing_data.get('amount'),
-                            unit=ing_data.get('unit', '')
-                        )
-                    
-                    # Create method steps
-                    for step_data in recipe_data.get('method', []):
-                        MethodStep.objects.create(
-                            recipe=recipe,
-                            description=step_data
-                        )
-            
-            messages.success(request, "Meal updated successfully!")
-            
-            if request.accepts('application/json'):
-                return JsonResponse({
-                    'redirect': reverse('main:meal_detail', args=[meal.pk])
-                })
-            return redirect('main:meal_detail', pk=meal.pk)
-            
-        except Exception as e:
-            error_message = str(e)
-            messages.error(request, f"Error parsing meal text: {error_message}")
-            if request.accepts('application/json'):
-                return JsonResponse({
-                    'message': error_message
-                }, status=400)
-            return render(request, 'main/meal_edit.html', {'meal': meal, 'meal_text': new_text})
-    
     context = {
         'meal': meal,
-        'meal_text': meal_text
+        'meal_text': format_meal_as_markdown(meal)
     }
     
     return render(request, 'main/meal_edit.html', context)
+
+@require_POST
+@login_required
+def meal_edit_post(request, pk):
+    """Handle meal edit form submission"""
+    meal = get_object_or_404(Meal, pk=pk)
     
+    # Check if user has access to this meal through collection
+    if meal.collection.user != request.user:
+        return HttpResponseForbidden("You don't have permission to edit this meal")
+    
+    new_text = request.POST.get('meal_text')
+    try:
+        # Parse the text and save it
+        recipe_data = parse_recipe_with_genai(raw_text=new_text)
+        meal, _ = save_parsed_recipe(recipe_data, meal=meal)
+        
+        messages.success(request, "Meal updated successfully!")
+        
+        if request.accepts('application/json'):
+            return JsonResponse({
+                'redirect': reverse('main:meal_detail', args=[meal.pk])
+            })
+        return redirect('main:meal_detail', pk=meal.pk)
+        
+    except Exception as e:
+        error_message = str(e)
+        messages.error(request, f"Error parsing meal text: {error_message}")
+        if request.accepts('application/json'):
+            return JsonResponse({
+                'message': error_message
+            }, status=400)
+        return render(request, 'main/meal_edit.html', {'meal': meal, 'meal_text': new_text})
 
 def meal_plan_detail(request, shareable_link):
     """
@@ -554,37 +505,6 @@ def remove_member(request, shareable_link, member_id):
     membership.delete()
     messages.success(request, f"Removed {member.username} from your meal plan")
     return redirect('main:collection_list')
-
-def create_meal_from_recipe_data(collection, recipe_data):
-    meal = Meal.objects.create(
-        title=recipe_data.get('title', 'New Meal'),
-        collection=collection,
-        description=recipe_data.get('description', ''),
-        url=recipe_data.get('url', '')
-    )
-    
-    for recipe in recipe_data.get('recipes', []):
-        recipe_obj = Recipe.objects.create(
-            meal=meal,
-            title=recipe.get('title', ''),
-            description=recipe.get('description', ''),
-        )
-        
-        for ingredient in recipe.get('ingredients', []):
-            Ingredient.objects.create(
-                recipe=recipe_obj,
-                name=ingredient.get('name', ''),
-                amount=ingredient.get('amount', None),
-                unit=ingredient.get('unit', '')
-            )
-        
-        for step in recipe.get('method', []):
-            MethodStep.objects.create(
-                recipe=recipe_obj,
-                description=step.strip()
-            )
-    
-    return meal
 
 def convert_to_jpeg(image_file):
     """Convert any image to JPEG format"""

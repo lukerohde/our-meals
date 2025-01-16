@@ -14,6 +14,7 @@ urlpatterns = [
     path('upload-photos/', views.upload_photos, name='upload_photos'),
     path('meals/<int:pk>/', views.meal_detail, name='meal_detail'),  
     path('meals/<int:pk>/edit/', views.meal_edit, name='meal_edit'),  
+    path('meals/<int:pk>/edit/save/', views.meal_edit_post, name='meal_edit_post'),  
     path('meals/<int:pk>/delete/', views.delete_meal, name='delete_meal'),
     
     # Meal Plans

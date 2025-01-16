@@ -1,6 +1,7 @@
 import { Application } from '@hotwired/stimulus'
 import MealPlanController from '../../main/js/controllers/meal_plan_controller'
 import RecipeImporterController from '../../main/js/controllers/recipe_importer_controller'
+import RecipeEditorController from '../../main/js/controllers/recipe_editor_controller'
 import MealActionsController from '../../main/js/controllers/meal_actions_controller'
 
 console.log('Loading Stimulus application...')
@@ -34,6 +35,7 @@ if (!application) {
 console.log('Registering controllers...')
 application.register('meal-plan', MealPlanController)
 application.register('recipe-importer', RecipeImporterController)
+application.register('recipe-editor', RecipeEditorController)
 application.register('meal-actions', MealActionsController)
 console.log('Controllers registered successfully')
 

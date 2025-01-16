@@ -22,7 +22,7 @@
 
     <div class="row justify-content-center">
       <div class="col-lg-10">
-        <form method="POST" data-controller="recipe-editor">
+        <form method="POST" data-controller="recipe-editor" data-action="submit->recipe-editor#submitForm">
           {% csrf_token %}
           <div class="form-group">
             <textarea 
@@ -37,9 +37,17 @@
           </div>
           
           <div class="mt-4">
-            <button type="submit" class="btn btn-primary rounded-pill">
+            <button type="submit" class="btn btn-primary rounded-pill" data-recipe-editor-target="submit">
               <i class="bi bi-check2"></i> Save Changes
             </button>
+            <div class="ai-loading d-none btn btn-primary rounded-pill" data-recipe-editor-target="loading">
+              <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>&nbsp;
+              <span>Analysing Modifications</span>
+            </div>
           </div>
         </form>
       </div>

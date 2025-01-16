@@ -322,14 +322,19 @@ def meal_edit(request, pk):
             
             messages.success(request, "Meal updated successfully!")
             
-            if request.headers.get('HX-Request'):
-                return HttpResponseRedirect(reverse('main:meal_detail', args=[meal.pk]))
+            if request.accepts('application/json'):
+                return JsonResponse({
+                    'redirect': reverse('main:meal_detail', args=[meal.pk])
+                })
             return redirect('main:meal_detail', pk=meal.pk)
             
         except Exception as e:
-            messages.error(request, f"Error parsing meal text: {str(e)}")
-            if request.headers.get('HX-Request'):
-                return HttpResponse(status=422)
+            error_message = str(e)
+            messages.error(request, f"Error parsing meal text: {error_message}")
+            if request.accepts('application/json'):
+                return JsonResponse({
+                    'message': error_message
+                }, status=400)
             return render(request, 'main/meal_edit.html', {'meal': meal, 'meal_text': new_text})
     
     context = {
@@ -337,8 +342,6 @@ def meal_edit(request, pk):
         'meal_text': meal_text
     }
     
-    if request.headers.get('HX-Request'):
-        return render(request, 'main/meal_edit.html', context)
     return render(request, 'main/meal_edit.html', context)
 
 def meal_plan_detail(request, shareable_link):

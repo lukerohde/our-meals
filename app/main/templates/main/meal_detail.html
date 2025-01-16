@@ -63,11 +63,6 @@
       <a href="{% url 'main:meal_edit' meal.pk %}" class="btn btn-outline-primary me-2 shadow-sm rounded-pill">
         <i class="bi bi-pencil"></i> Edit
       </a>
-      {% if meal.url %}
-        <a href="{{ meal.url }}" target="_blank" class="btn btn-outline-primary me-2 shadow-sm rounded-pill">
-          <i class="bi bi-link-45deg"></i> Original Recipe
-        </a>
-      {% endif %}
       {% if current_meal_plan %}
         <form method="POST" action="{% url 'main:toggle_meal_in_meal_plan' current_meal_plan.shareable_link meal.id %}?collection_id={{ meal.collection.id }}">
           {% csrf_token %}

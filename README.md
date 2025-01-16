@@ -69,6 +69,7 @@ TODO
     * DONE Improve error pages
     * DONE AJAX Add to meal plan
     * DONE AJAX Remove from meal plan
+    * List recipe sources (images, links, etc) at the bottom of the page)
     * AJAX Grocery list
     * Async or streaming grocery list
     * Use reasoning model on grocery list

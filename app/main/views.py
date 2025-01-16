@@ -343,6 +343,7 @@ def meal_edit(request, pk):
     }
     
     return render(request, 'main/meal_edit.html', context)
+    
 
 def meal_plan_detail(request, shareable_link):
     """

@@ -3,6 +3,7 @@
 {% block content %}
 <div class="container py-4" data-controller="meal-plan" 
     data-meal-plan-save-url-value="{% url 'main:save_grocery_list' meal_plan.shareable_link %}"
+    data-meal-plan-generate-url-value="{% url 'main:create_grocery_list' meal_plan.shareable_link %}"
     data-meal-plan-csrf-token-value="{{ csrf_token }}">
     <!-- Header Section -->
     <div class="row mb-5">
@@ -127,7 +128,8 @@
                 <!-- AI Instructions -->
                 <div class="card mb-4">
                     <div class="card-body">
-                        <form method="post" action="{% url 'main:create_grocery_list' meal_plan.shareable_link %}">
+                        <form method="post" action="{% url 'main:create_grocery_list' meal_plan.shareable_link %}"
+                              data-action="meal-plan#generateGroceryList">
                             {% csrf_token %}
                             <div class="mb-3">
                                 <label for="grocery-list-instruction" class="form-label">
@@ -138,12 +140,19 @@
                                     id="grocery-list-instruction" 
                                     name="grocery_list_instruction" 
                                     rows="3" 
-                                    placeholder="e.g., Separate items for the Asian grocer, add non-food items."
-                                >{{ meal_plan.grocery_list_instruction|default_if_none:"" }}</textarea>
+                                    placeholder="Optional: Add special instructions for organizing the grocery list...">{{ meal_plan.grocery_list_instruction }}</textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-stars me-2"></i>Generate List with AI
+                            <button type="submit" class="btn btn-primary" data-meal-plan-target="submit">
+                                <i class="bi bi-magic me-2"></i>Generate with AI
                             </button>
+                            <div class="ai-loading d-none btn btn-primary" data-meal-plan-target="loading">
+                                <i class="bi bi-magic me-2"></i>Generating
+                                <span class="dots">
+                                    <span class="dot"></span>
+                                    <span class="dot"></span>
+                                    <span class="dot"></span>
+                                </span>
+                            </div>
                         </form>
                     </div>
                 </div>

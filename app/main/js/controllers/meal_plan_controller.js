@@ -12,13 +12,14 @@ import { showToast } from '../../../static/js/utils/toast'
 export default class extends Controller {
     // DOM targets that this controller interacts with
     static get targets() { 
-        return ["groceryList", "saveStatus", "shareLink"] 
+        return ["groceryList", "saveStatus", "shareLink", "submit", "loading"] 
     }
     
     // Values passed from the server via data attributes
     static get values() { 
         return {
             saveUrl: String,  // URL for saving grocery list
+            generateUrl: String, // URL for generating grocery list with AI
             csrfToken: String // Django CSRF token
         }
     }
@@ -79,6 +80,46 @@ export default class extends Controller {
         } catch (err) {
             showToast('Failed to copy link', 'error')
             console.error('Failed to copy link:', err)
+        }
+    }
+
+    // Generate grocery list with AI
+    async generateGroceryList(event) {
+        event.preventDefault()
+        
+        // Show loading state
+        this.submitTarget.classList.add('d-none')
+        this.loadingTarget.classList.remove('d-none')
+        
+        try {
+            const form = event.target
+            const response = await fetch(this.generateUrlValue, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'X-CSRFToken': this.csrfTokenValue
+                },
+                body: new URLSearchParams({
+                    'grocery_list_instruction': document.getElementById('grocery-list-instruction').value
+                })
+            })
+
+            const data = await response.json()
+            
+            if (response.ok) {
+                this.groceryListTarget.value = data.grocery_list
+                showToast('Success', 'Grocery list generated successfully!')
+            } else {
+                throw new Error(data.error || 'Failed to generate grocery list')
+            }
+        } catch (error) {
+            console.error('Error:', error)
+            showToast('Error', 'Failed to generate grocery list. Please try again.')
+        } finally {
+            // Reset form state
+            this.submitTarget.classList.remove('d-none')
+            this.loadingTarget.classList.add('d-none')
         }
     }
 }

@@ -471,15 +471,35 @@ def create_grocery_list(request, shareable_link):
     
     # Check if user is a member
     if not meal_plan.memberships.filter(user=request.user).exists():
+        if request.accepts('application/json'):
+            return JsonResponse({'error': 'Not authorized'}, status=403)
         raise Http404("Meal plan not found")
     
-    ingredients = gather_ingredients(meal_plan)
-    grocery_list_instruction = request.POST.get('grocery_list_instruction', '') or ''
-    formatted_list = summarize_grocery_list_with_genai(ingredients, grocery_list_instruction)
-    meal_plan.grocery_list = formatted_list
-    meal_plan.grocery_list_instruction = grocery_list_instruction
-    meal_plan.save()
-    return redirect('main:meal_plan_detail', shareable_link=shareable_link)
+    try:
+        ingredients = gather_ingredients(meal_plan)
+        grocery_list_instruction = request.POST.get('grocery_list_instruction', '') or ''
+        formatted_list = summarize_grocery_list_with_genai(ingredients, grocery_list_instruction)
+        meal_plan.grocery_list = formatted_list
+        meal_plan.grocery_list_instruction = grocery_list_instruction
+        meal_plan.save()
+        
+        messages.success(request, "Grocery list generated successfully!")
+        
+        if request.accepts('application/json'):
+            return JsonResponse({
+                'status': 'success',
+                'grocery_list': formatted_list
+            })
+        return redirect('main:meal_plan_detail', shareable_link=shareable_link)
+        
+    except Exception as e:
+        error_message = str(e)
+        messages.error(request, f"Error generating grocery list: {error_message}")
+        if request.accepts('application/json'):
+            return JsonResponse({
+                'error': error_message
+            }, status=400)
+        return redirect('main:meal_plan_detail', shareable_link=shareable_link)
 
 @require_POST
 @login_required

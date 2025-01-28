@@ -1,8 +1,16 @@
 # Our Menu
 
-A totally unnessary django app to manage our menu - it uses GenAI to scrape recipes and manipulate menus.    I should contributed Mealie instead.
+A totally unnessary django app to manage our recipes and meal planning.  See [OurMeals.Online](https://ourmeals.online)
 
-TODO
+## FEATURES
+* Extract recipes from recipe blogs to make them easier to follow
+* Take a photo of a recipe to import it.  It can read your Grandma's handwriting
+* Make a meal plan and generate a grocery list
+* Easy text based interface for editing recipes - no nasty dropdowns
+* Share meal plans with friends and family
+* Runs in docker, and deploys to either digital ocean or render
+
+## TODO
 * Features
     * DONE Edit a meal
     * DONE Edit a collection
